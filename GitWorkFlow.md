@@ -274,3 +274,116 @@ git push origin --delete feature/your-feature-name   # remote
 ```bash
 git log --oneline -10    # see the last 10 commits
 ```
+
+---
+
+## 10. Development Environment Setup on Windows
+
+Everything you need installed on a **Windows** machine (plus terminal packages)
+before you can clone, run, and contribute to the Linguafy project.
+
+### 10.1 Required software (Windows)
+
+| Install this | Why you need it | How to install |
+|--------------|-----------------|----------------|
+| **Git for Windows** | Version control — `git` CLI required for every step in this guide | Download from https://git-scm.com/download/win (accept defaults; includes Git Bash) |
+| **Node.js LTS (v20 LTS or newer)** | Runtime for Vite, npm, and React; the project runs on `npm run dev` | Download from https://nodejs.org/ and install LTS |
+| **Visual Studio Code** | Recommended editor for this React project | Download from https://code.visualstudio.com/ |
+| **GitHub CLI (`gh`) — optional** | Create PRs straight from the terminal (`gh pr create`) | `winget install --id GitHub.cli` or https://cli.github.com/ |
+
+### 10.2 Verify everything is installed
+
+Open **PowerShell or Git Bash** and run:
+
+```bash
+git --version
+node --version
+npm --version
+```
+
+Expected output looks like `git version 2.x`, `v20.x.x`, `9.x` (or newer). If a
+command is not recognized, restart your terminal after installing, or check
+PATH in Windows environment variables.
+
+### 10.3 Recommended VS Code extensions
+
+| Extension | Purpose | Install ID |
+|-----------|---------|-----------|
+| ES7+ React/Redux/React-Native snippets | Fast React + JSX snippets | `dsznajder.es7-react-js-snippets` |
+| ESLint | Catches JS/JSX errors while editing | `dbaeumer.vscode-eslint` |
+| Prettier – Code formatter | Auto-format code on save | `esbenp.prettier-vscode` |
+| Tailwind CSS IntelliSense | In case Tailwind is added later (see plan §1.4) | `bradlc.vscode-tailwindcss` |
+| GitHub Pull Requests and Issues | Review/merge PRs from inside VS Code | `github.vscode-pull-request-github` |
+| GitLens | See blame, history, and branch status inline | `eamodio.gitlens` |
+| Auto Rename Tag | Renames paired HTML/JSX tags together | `formulahendry.auto-rename-tag` |
+| `vscode-icons` | Clear file-type icons in the explorer | `vscode.icons-team.vscode-icons` |
+
+> You can install these from the VS Code Extensions panel (Ctrl+Shift+X) by
+> searching the install ID, or via terminal:
+>
+> ```bash
+> code --install-extension dsznajder.es7-react-js-snippets
+> code --install-extension dbaeumer.vscode-eslint
+> code --install-extension esbenp.prettier-vscode
+> code --install-extension github.vscode-pull-request-github
+> code --install-extension eamodio.gitlens
+> ```
+
+### 10.4 Recommended VS Code workspace settings
+
+Create a `.vscode/settings.json` in the project root so everyone shares the same
+editor setup:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "files.eol": "\r\n",
+  "eslint.validate": ["javascript", "javascriptreact"],
+  "files.exclude": {
+    "node_modules": true,
+    "dist": true
+  }
+}
+```
+
+> Set EOL to `\r\n` on Windows to avoid "every line changed" diffs when both
+> Windows and Mac users commit files.
+
+### 10.5 Terminal / shell recommended
+
+| Tool | Why |
+|------|-----|
+| **Git Bash** (comes with Git for Windows) | Most reliable shell for this workflow; closest to Linux-style commands |
+| **Windows Terminal** | Nice tabs; pair with PowerShell or Git Bash |
+| Install PowerShell 7.x (optional) | Better syntax + autocomplete than the old Windows PowerShell 5.1 |
+
+### 10.6 Install project dependencies
+
+Once cloned (Section 1), install everything the project needs:
+
+```bash
+npm install
+```
+
+This reads `package.json` and creates `node_modules/`. Do **not** commit
+`node_modules/` — it is already in `.gitignore`.
+
+### 10.7 Run the app locally
+
+```bash
+npm run dev
+```
+
+Vite prints a local URL (normally **http://localhost:5173**). Open it in Chrome
+or Edge to see the app. On-screen app: local hot-reload; close with `Ctrl+C`.
+
+### 10.8 Other packages you may want
+
+| Package | When you need it |
+|---------|------------------|
+| **`gh` (GitHub CLI)** | Creating/merging pull requests from the terminal (Section 5.1) |
+| **Postman** (or Insomnia) | Later, for testing the planned backend API (plan §1.3) |
+| **NVM for Windows** (optional) | If you work on multiple projects needing different Node versions |
+| **Docker Desktop** (future) | When a Postgres/Supabase-local backend is introduced (plan §1.2) |
