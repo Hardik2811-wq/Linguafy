@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
 export function getToken() { return localStorage.getItem('linguafy_token'); }
 export function getStoredUser() { try { return JSON.parse(localStorage.getItem('linguafy_user') || 'null'); } catch { return null; } }
