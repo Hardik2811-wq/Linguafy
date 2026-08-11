@@ -2,9 +2,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 dotenv.config({ path: '.env.local', override: true });
 
+export const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, '').toLowerCase();
+
 export const config = {
   port: Number(process.env.PORT || 4000),
   frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+  allowedOrigins: (process.env.FRONTEND_ORIGIN ? process.env.FRONTEND_ORIGIN : 'http://localhost:5173')
+    .split(',')
+    .map(normalizeOrigin)
+    .filter(Boolean),
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
