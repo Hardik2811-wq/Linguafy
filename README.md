@@ -26,6 +26,17 @@ Full-stack English-learning app: React + Vite frontend, Express API, Groq feedba
 > Set `VITE_API_URL=https://linguafy-backend.vercel.app` if you want the local
 > frontend to talk to the hosted backend instead of your local API.
 
+### Test user
+
+Use this account to try the live app without signing up:
+
+| | |
+|---|---|
+| Email | `test@dev.com` |
+| Password | `123!@#qwe` |
+
+> This is a shared dummy account for testing only — don't use it for real data.
+
 ## Run locally
 
 In one terminal, start the API:
@@ -51,26 +62,62 @@ Open `http://localhost:5173`. Create an account, then use Writing, Grammar, Voca
 
 For persistent production users, create a Supabase project, run [supabase/schema.sql](supabase/schema.sql) and [supabase/seed.sql](supabase/seed.sql), then add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to `backend/.env` (see `backend/.env.example`). Never put those secrets or the Groq key in Vite environment variables.
 
-## How to update the live Vercel site
+## How to update the frontend via git push (simple steps)
 
-The live site (`https://linguafy.vercel.app/`) is linked to the GitHub repo. It updates automatically when you push to `main` — **no manual upload needed**.
+The live site (`https://linguafy.vercel.app/`) is linked to the GitHub repo. It
+updates automatically when you push to `main` — **no manual upload needed**.
 
-### Normal flow (push → Vercel auto-deploys)
+### Step 1 — Prepare the frontend `.env.local` file
 
-1. Make your changes and commit them.
-2. Push to the `main` branch on GitHub:
-   ```bash
-   git add .
-   git commit -m "Describe your change"
-   git push origin main
-   ```
-3. Vercel sees the push, runs `npm run build`, and deploys automatically.
-4. Wait 1–2 minutes, then open the site.
-5. Still see the old version? **Hard-refresh** your browser to skip the cache:
+In the **project root** (the frontend folder), create a file called `.env.local`:
+
+```
+VITE_API_URL=https://linguafy-backend.vercel.app
+```
+
+Replace `https://linguafy-backend.vercel.app` with your actual backend URL
+(see "Important links" above).
+
+- **Why:** this is the local version of the API URL, used by `src/api.js`.
+- **Do NOT commit this file** — it's local-only and already ignored by Git
+  (`.gitignore` ignores `.env`; `.env.local` behaves the same way).
+- **For the live site:** because `.env.local` never reaches Vercel, you must
+  also add `VITE_API_URL` as an Environment Variable in the Vercel dashboard
+  (project → **Settings → Environment Variables**, key `VITE_API_URL`, value
+  the same backend URL). This gets baked into the production build.
+
+### Step 2 — Make your changes
+
+Edit the frontend files, then test locally:
+
+```bash
+npm run dev
+```
+
+### Step 3 — Build locally first (catches errors)
+
+```bash
+npm run build
+```
+
+If this fails, fix the errors before pushing. A failing build is the #1 reason
+Vercel keeps showing the old version.
+
+### Step 4 — Commit and push to `main`
+
+```bash
+git add .
+git commit -m "Describe your change"
+git push origin main
+```
+
+### Step 5 — Vercel auto-deploys
+
+1. Vercel sees the push, runs `npm run build`, and deploys automatically.
+2. Wait 1–2 minutes, then open `https://linguafy.vercel.app/`.
+3. Still see the old version? **Hard-refresh** your browser to skip the cache:
    - Windows: `Ctrl + Shift + R`
    - Mac: `Cmd + Shift + R`
-
-### If the old version still shows after a hard refresh
 
 Check these, in order:
 
@@ -95,12 +142,10 @@ Check these, in order:
    updated): In the Deployments tab, find the latest commit, click the `⋯` menu,
    and choose **Redeploy**.
 
-6. **Build locally first** to make sure your code actually compiles:
-   ```bash
-   npm run build
-   ```
-   If this errors, fix it before pushing — a failing build is the #1 reason
-   Vercel keeps showing the old version.
+6. **Is `VITE_API_URL` set in Vercel?** If the site loads but calls the wrong
+   backend, check the Environment Variables (see Step 1). After changing an
+   environment variable, trigger a **Redeploy** — it does not apply to an old
+   build.
 
 > Note: the web UI and the API are **two separate Vercel projects**:
 > - **Frontend** → `linguafy.vercel.app` (from the repo root)
