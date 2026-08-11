@@ -2,6 +2,30 @@
 
 Full-stack English-learning app: React + Vite frontend, Express API, Groq feedback, and an optional Supabase production database/auth layer.
 
+---
+
+## Important links & info
+
+| What | Where |
+|------|-------|
+| **Live app (frontend)** | https://linguafy.vercel.app/ |
+| **Live API (backend)** | https://linguafy-backend.vercel.app/ |
+| **API health check** | https://linguafy-backend.vercel.app/health |
+| **GitHub repo** | https://github.com/Hardik2811-wq/Linguafy |
+| **API reference** | See the [backend routes](AboutProject.md#5-backend--routes-api) in `AboutProject.md` |
+
+### Where things are configured
+
+| Item | Location |
+|------|----------|
+| Backend port, Supabase + Groq keys, allowed frontend origin | `backend/.env` (copy from `backend/.env.example`, **never commit it**) |
+| Frontend API URL | `src/api.js` uses `VITE_API_URL` (defaults to `http://localhost:4000`) |
+| Database schema | `supabase/schema.sql` |
+| Seed data (drills + words) | `supabase/seed.sql` |
+
+> Set `VITE_API_URL=https://linguafy-backend.vercel.app` if you want the local
+> frontend to talk to the hosted backend instead of your local API.
+
 ## Run locally
 
 In one terminal, start the API:
@@ -78,6 +102,10 @@ Check these, in order:
    If this errors, fix it before pushing — a failing build is the #1 reason
    Vercel keeps showing the old version.
 
-> Note: the API (`backend/`) is **not** hosted on Vercel — only the web UI is.
-> The live site uses the Groq key and database from wherever the backend is
-> running; updating the frontend does not change the backend.
+> Note: the web UI and the API are **two separate Vercel projects**:
+> - **Frontend** → `linguafy.vercel.app` (from the repo root)
+> - **Backend** → `linguafy-backend.vercel.app` (from the `backend/` folder)
+>
+> Updating one does not change the other — each deploys independently from its
+> own folder. The live frontend must be pointed at the live backend, so check
+> the `VITE_API_URL` used when the frontend was built.
