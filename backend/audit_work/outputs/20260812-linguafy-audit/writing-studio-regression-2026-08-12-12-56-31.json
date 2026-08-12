@@ -1,0 +1,345 @@
+[
+  {
+    "id": "A1",
+    "category": "clean",
+    "ok": true,
+    "context": "Essay",
+    "text": "Yesterday, I read the novel \"To Kill a Mockingbird\".",
+    "score": 93,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "Yesterday, I read the novel \"To Kill a Mockingbird\".",
+        "type": "consider_adding_more_context"
+      }
+    ],
+    "alternatives": [
+      "I recently finished reading \"To Kill a Mockingbird\", which I found to be a thought-provoking novel."
+    ]
+  },
+  {
+    "id": "A2",
+    "category": "clean",
+    "ok": true,
+    "context": "Essay",
+    "text": "Yesterday, I read the novel To Kill a Mockingbird.",
+    "score": 93,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "Yesterday, I read the novel To Kill a Mockingbird.",
+        "type": "consider_adding_more_detail"
+      }
+    ],
+    "alternatives": [
+      "I recently finished reading To Kill a Mockingbird, which I found to be a compelling novel."
+    ]
+  },
+  {
+    "id": "A3",
+    "category": "clean",
+    "ok": true,
+    "context": "Professional email",
+    "text": "I am a software developer and I work on this project every day.",
+    "score": 93,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "I work on this project every day",
+        "type": "consider_adding_more_detail"
+      }
+    ],
+    "alternatives": [
+      "As a software developer, I work on this project daily"
+    ]
+  },
+  {
+    "id": "A4",
+    "category": "clean",
+    "ok": true,
+    "context": "Essay",
+    "text": "The results of the experiment were consistent across all three trials, which suggests the method is reliable.",
+    "score": 90,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "The results of the experiment were consistent across all three trials, which suggests the method is reliable.",
+        "type": "consider_adding_more_detail"
+      }
+    ],
+    "alternatives": [
+      "indicating that the method is reliable"
+    ]
+  },
+  {
+    "id": "A5",
+    "category": "clean",
+    "ok": true,
+    "context": "Casual message",
+    "text": "hey how are you doing today hope your weekend was good",
+    "score": 70,
+    "errors": [
+      {
+        "text": "hey",
+        "should_be": "Hey",
+        "reason": "Capitalization at the beginning of a sentence"
+      },
+      {
+        "text": "how are you doing today hope your weekend was good",
+        "should_be": "How are you doing today? Hope your weekend was good.",
+        "reason": "Lack of punctuation to separate sentences"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "I hope you had a great weekend",
+        "type": "phrase variation for more formal tone"
+      }
+    ],
+    "alternatives": [
+      "Hello, how are you doing today? I hope your weekend was good."
+    ]
+  },
+  {
+    "id": "B1",
+    "category": "errors",
+    "ok": true,
+    "context": "Professional email",
+    "text": "She don't like coffee, so we should not order any for the meeting.",
+    "score": 83,
+    "errors": [
+      {
+        "text": "She don't",
+        "should_be": "She doesn't",
+        "reason": "Subject-verb agreement"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "it would be better to ask her directly",
+        "type": "politeness"
+      },
+      {
+        "text": "consider alternatives to coffee",
+        "type": "inclusivity"
+      }
+    ],
+    "alternatives": [
+      "therefore, we can skip ordering coffee for the meeting"
+    ]
+  },
+  {
+    "id": "B2",
+    "category": "errors",
+    "ok": true,
+    "context": "Essay",
+    "text": "Yesterday I go to the store and buy a book about history.",
+    "score": 80,
+    "errors": [
+      {
+        "text": "Yesterday I go",
+        "should_be": "Yesterday I went",
+        "reason": "verb tense consistency"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "about history",
+        "type": "consider adding more specificity"
+      }
+    ],
+    "alternatives": [
+      "purchased a book"
+    ]
+  },
+  {
+    "id": "B3",
+    "category": "errors",
+    "ok": true,
+    "context": "Essay",
+    "text": "I have car and I drive it to work every morning.",
+    "score": 80,
+    "errors": [
+      {
+        "text": "I have car",
+        "should_be": "I have a car",
+        "reason": "Missing indefinite article"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "every morning",
+        "type": "consider adding more detail for specificity, e.g., 'every weekday morning'"
+      }
+    ],
+    "alternatives": [
+      "I commute to work in it"
+    ]
+  },
+  {
+    "id": "B4",
+    "category": "errors",
+    "ok": true,
+    "context": "Essay",
+    "text": "There was many people at the conference last week.",
+    "score": 87,
+    "errors": [
+      {
+        "text": "There was many people",
+        "should_be": "There were many people",
+        "reason": "Subject-verb agreement"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "at the conference last week",
+        "type": "consider adding more specific details"
+      }
+    ],
+    "alternatives": [
+      "on Friday"
+    ]
+  },
+  {
+    "id": "B5",
+    "category": "errors",
+    "ok": true,
+    "context": "Cover letter",
+    "text": "I am writing to apply for the position witch I saw advertised on your website.",
+    "score": 80,
+    "errors": [
+      {
+        "text": "witch",
+        "should_be": "which",
+        "reason": "incorrect word usage"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "I am excited to apply for the position that I saw advertised on your website.",
+        "type": "sentence rephrase for more enthusiasm"
+      }
+    ],
+    "alternatives": [
+      "I am excited to apply"
+    ]
+  },
+  {
+    "id": "C1",
+    "category": "style",
+    "ok": true,
+    "context": "Professional email",
+    "text": "Please find attached my report. It was written by my team.",
+    "score": 93,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "It was written by my team",
+        "type": "clarification"
+      }
+    ],
+    "alternatives": [
+      "I am pleased to share the attached report, which was prepared by my team."
+    ]
+  },
+  {
+    "id": "C2",
+    "category": "style",
+    "ok": true,
+    "context": "Professional email",
+    "text": "We are very happy to inform you that the project is going very well.",
+    "score": 93,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "the project is going very well",
+        "type": "consider adding more specific details"
+      }
+    ],
+    "alternatives": [
+      "We are pleased to report"
+    ]
+  },
+  {
+    "id": "C3",
+    "category": "style",
+    "ok": false,
+    "error": "429 {\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kpnwavg4frxs67f4kah0gf8d` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 11687, Requested 436. Please try again in 615ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}",
+    "context": "Essay",
+    "text": "In conclusion, the evidence shows that technology has made our lives more complicated."
+  },
+  {
+    "id": "C4",
+    "category": "style",
+    "ok": false,
+    "error": "429 {\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kpnwavg4frxs67f4kah0gf8d` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 11688, Requested 419. Please try again in 535ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}",
+    "context": "Casual message",
+    "text": "Im going to the gym after work, wanna come?"
+  },
+  {
+    "id": "D1",
+    "category": "mixed",
+    "ok": true,
+    "context": "Essay",
+    "text": "In modern society, technology have changed the way we live. Many people thinks that this is a bad development, but I disagree. When I was young, I remember watching my father fix the television with a screwdriver, a skill that is now lost. For example, the internet allow us to communicate instantly with people all over the world. On the other hand, some argue that we spend to much time looking at screens.",
+    "score": 83,
+    "errors": [
+      {
+        "text": "technology have",
+        "should_be": "technology has",
+        "reason": "Subject-verb agreement"
+      },
+      {
+        "text": "Many people thinks",
+        "should_be": "Many people think",
+        "reason": "Subject-verb agreement"
+      },
+      {
+        "text": "the internet allow",
+        "should_be": "the internet allows",
+        "reason": "Subject-verb agreement"
+      },
+      {
+        "text": "we spend to much time",
+        "should_be": "we spend too much time",
+        "reason": "Correct use of 'too' instead of 'to'"
+      }
+    ],
+    "suggestions": [
+      {
+        "text": "When I was young, I remember watching my father fix the television with a screwdriver, a skill that is now lost",
+        "type": "Consider adding more context or explanation for the lost skill"
+      },
+      {
+        "text": "On the other hand, some argue that we spend too much time looking at screens",
+        "type": "Consider providing evidence or examples to support the argument"
+      }
+    ],
+    "alternatives": [
+      "Modern technology has significantly changed the way we live",
+      "For instance, the internet enables instant global communication"
+    ]
+  },
+  {
+    "id": "D2",
+    "category": "mixed",
+    "ok": true,
+    "context": "Cover letter",
+    "text": "Dear Hiring Manager, I am writing to express my interest in the Product Manager position. I have five years of experience in this field and I led a team that launch three successful products. I am confident that my skills would make me a valuable addition to your company. Please find my resume attached.",
+    "score": 83,
+    "errors": [],
+    "suggestions": [
+      {
+        "text": "I have five years of experience in this field",
+        "type": "consider adding specific accomplishments"
+      },
+      {
+        "text": "I am confident that my skills would make me a valuable addition to your company",
+        "type": "show, don't tell - provide concrete examples"
+      }
+    ],
+    "alternatives": [
+      "I led a team that launched three successful products"
+    ]
+  }
+]
