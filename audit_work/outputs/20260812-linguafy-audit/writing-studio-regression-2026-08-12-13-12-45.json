@@ -1,0 +1,600 @@
+{
+  "timestamp": "2026-08-12T13:12:45.123Z",
+  "iqi": 97,
+  "precision": 100,
+  "recall": 100,
+  "actionable": 87,
+  "altCoverage": 95,
+  "cases": [
+    {
+      "id": "A1",
+      "ok": true,
+      "category": "clean",
+      "context": "Essay",
+      "text": "Yesterday, I read the novel \"To Kill a Mockingbird\".",
+      "score": 92,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "Yesterday, I read the novel",
+          "type": "concision",
+          "improved": "I read the novel yesterday"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "read",
+          "improved": "finished",
+          "reason": "To indicate completion of the novel"
+        }
+      ]
+    },
+    {
+      "id": "A2",
+      "ok": true,
+      "category": "clean",
+      "context": "Essay",
+      "text": "Yesterday, I read the novel To Kill a Mockingbird.",
+      "score": 92,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "Yesterday, I read the novel To Kill a Mockingbird.",
+          "type": "concision",
+          "improved": "I read To Kill a Mockingbird yesterday."
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "read",
+          "improved": "finished",
+          "reason": "More descriptive verb choice"
+        }
+      ]
+    },
+    {
+      "id": "A3",
+      "ok": true,
+      "category": "clean",
+      "context": "Professional email",
+      "text": "I am a software developer and I work on this project every day.",
+      "score": 90,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "I am a software developer and I work on this project every day",
+          "type": "concision",
+          "improved": "As a software developer, I work on this project daily"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "every day",
+          "improved": "daily",
+          "reason": "more concise"
+        }
+      ]
+    },
+    {
+      "id": "A4",
+      "ok": true,
+      "category": "clean",
+      "context": "Essay",
+      "text": "The results of the experiment were consistent across all three trials, which suggests the method is reliable.",
+      "score": 96,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "which suggests the method is reliable",
+          "type": "concision",
+          "improved": "indicating the method's reliability"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "reliable",
+          "improved": "dependable",
+          "reason": "More precise vocabulary"
+        }
+      ]
+    },
+    {
+      "id": "A5",
+      "ok": true,
+      "category": "clean",
+      "context": "Casual message",
+      "text": "hey how are you doing today hope your weekend was good",
+      "score": 90,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "hey",
+          "type": "register",
+          "improved": "hi"
+        },
+        {
+          "text": "hope your weekend was good",
+          "type": "clarity",
+          "improved": "hope you had a great weekend"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "good",
+          "improved": "great",
+          "reason": "adds more enthusiasm"
+        },
+        {
+          "original": "doing today",
+          "improved": "doing so far",
+          "reason": "more specific time frame"
+        }
+      ]
+    },
+    {
+      "id": "A6",
+      "ok": true,
+      "category": "clean",
+      "context": "Professional email",
+      "text": "Please find attached the quarterly report. Let me know if you have any questions.",
+      "score": 95,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "Let me know if you have any questions",
+          "type": "clarity",
+          "improved": "Please do not hesitate to contact me if you have any questions or require further clarification"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "report",
+          "improved": "quarterly review",
+          "reason": "More descriptive and formal term"
+        }
+      ]
+    },
+    {
+      "id": "A7",
+      "ok": true,
+      "category": "clean",
+      "context": "Essay",
+      "text": "In conclusion, the evidence presented throughout this essay demonstrates that while technology introduces genuine challenges, its benefits in education, healthcare, and communication far outweigh the drawbacks when applied thoughtfully.",
+      "score": 98,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "demonstrates that while technology introduces genuine challenges, its benefits in education, healthcare, and communication far outweigh the drawbacks when applied thoughtfully",
+          "type": "concision",
+          "improved": "shows that technology's benefits in education, healthcare, and communication outweigh its drawbacks when used thoughtfully"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "genuine",
+          "improved": "significant",
+          "reason": "More precise vocabulary"
+        },
+        {
+          "original": "far outweigh",
+          "improved": "substantially outweigh",
+          "reason": "More formal and precise phrase"
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "ok": true,
+      "category": "errors",
+      "context": "Professional email",
+      "text": "She don't like coffee, so we should not order any for the meeting.",
+      "score": 83,
+      "errors": [
+        {
+          "text": "She don't",
+          "should_be": "She doesn't",
+          "reason": "subject-verb agreement"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "so we should not order any for the meeting",
+          "type": "concision",
+          "improved": "so we shouldn't order any"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "meeting",
+          "improved": "gathering",
+          "reason": "more formal alternative"
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "ok": true,
+      "category": "errors",
+      "context": "Essay",
+      "text": "Yesterday I go to the store and buy a book about history.",
+      "score": 70,
+      "errors": [
+        {
+          "text": "Yesterday I go",
+          "should_be": "Yesterday I went",
+          "reason": "verb tense consistency"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "buy a book about history",
+          "type": "clarity",
+          "improved": "purchase a historical book"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "book",
+          "improved": "textbook",
+          "reason": "more specific term"
+        },
+        {
+          "original": "store",
+          "improved": "bookstore",
+          "reason": "more precise location"
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "ok": true,
+      "category": "errors",
+      "context": "Essay",
+      "text": "I have car and I drive it to work every morning.",
+      "score": 70,
+      "errors": [
+        {
+          "text": "I have car",
+          "should_be": "I have a car",
+          "reason": "missing indefinite article"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "I drive it to work every morning",
+          "type": "concision",
+          "improved": "I commute to work daily"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "car",
+          "improved": "vehicle",
+          "reason": "more formal vocabulary"
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "ok": true,
+      "category": "errors",
+      "context": "Essay",
+      "text": "There was many people at the conference last week.",
+      "score": 85,
+      "errors": [
+        {
+          "text": "There was many people",
+          "should_be": "There were many people",
+          "reason": "subject-verb agreement"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "at the conference last week",
+          "type": "concision",
+          "improved": "last week's conference"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "people",
+          "improved": "attendees",
+          "reason": "more precise vocabulary"
+        }
+      ]
+    },
+    {
+      "id": "B5",
+      "ok": true,
+      "category": "errors",
+      "context": "Cover letter",
+      "text": "I am writing to apply for the position witch I saw advertised on your website.",
+      "score": 88,
+      "errors": [
+        {
+          "text": "witch",
+          "should_be": "which",
+          "reason": "spelling mistake, 'witch' refers to a magical practitioner, whereas 'which' is used for selection"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "I am writing to apply for the position",
+          "type": "clarity",
+          "improved": "I am excited to apply for the position"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "saw advertised",
+          "improved": "noticed",
+          "reason": "more concise and direct"
+        }
+      ]
+    },
+    {
+      "id": "B6",
+      "ok": true,
+      "category": "errors",
+      "context": "Professional email",
+      "text": "The list of items were reviewed, and the shipment was dispatched this morning.",
+      "score": 94,
+      "errors": [
+        {
+          "text": "The list of items were",
+          "should_be": "The list of items was",
+          "reason": "subject-verb agreement"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "this morning",
+          "type": "concision",
+          "improved": "today"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "dispatched",
+          "improved": "shipped",
+          "reason": "more common verb choice"
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "ok": true,
+      "category": "errors",
+      "context": "Essay",
+      "text": "Each of the students were given a copy of the instructions before the test began.",
+      "score": 88,
+      "errors": [
+        {
+          "text": "Each of the students were",
+          "should_be": "Each of the students was",
+          "reason": "subject-verb agreement"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "before the test began",
+          "type": "clarity",
+          "improved": "prior to the commencement of the test"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "given",
+          "improved": "provided",
+          "reason": "more formal vocabulary"
+        },
+        {
+          "original": "a copy of the instructions",
+          "improved": "a set of instructions",
+          "reason": "more concise phrase"
+        }
+      ]
+    },
+    {
+      "id": "C1",
+      "ok": true,
+      "category": "style",
+      "context": "Professional email",
+      "text": "Please find attached my report. It was written by my team.",
+      "score": 96,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "It was written by my team",
+          "type": "clarity",
+          "improved": "which was compiled by my team"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "report",
+          "improved": "detailed analysis",
+          "reason": "adds more specificity"
+        }
+      ]
+    },
+    {
+      "id": "C2",
+      "ok": true,
+      "category": "style",
+      "context": "Professional email",
+      "text": "We are very happy to inform you that the project is going very well.",
+      "score": 95,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "We are very happy to inform you that the project is going very well",
+          "type": "concision",
+          "improved": "The project is progressing well"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "very happy",
+          "improved": "pleased",
+          "reason": "More formal and concise expression of satisfaction"
+        },
+        {
+          "original": "going very well",
+          "improved": "proceeding successfully",
+          "reason": "More formal and precise phrase to describe project progress"
+        }
+      ]
+    },
+    {
+      "id": "C3",
+      "ok": true,
+      "category": "style",
+      "context": "Essay",
+      "text": "In conclusion, the evidence shows that technology has made our lives more complicated.",
+      "score": 92,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "In conclusion, the evidence shows that technology has made our lives more complicated",
+          "type": "concision",
+          "improved": "In conclusion, technology has complicated our lives"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "complicated",
+          "improved": "exacerbated",
+          "reason": "Provides a more nuanced expression of the impact"
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "ok": true,
+      "category": "style",
+      "context": "Casual message",
+      "text": "Im going to the gym after work, wanna come?",
+      "score": 100,
+      "errors": [],
+      "suggestions": [],
+      "alternatives": []
+    },
+    {
+      "id": "C5",
+      "ok": true,
+      "category": "style",
+      "context": "Professional email",
+      "text": "Due to the fact that we are experiencing a high volume of requests, our team will be responding as soon as possible.",
+      "score": 96,
+      "errors": [],
+      "suggestions": [
+        {
+          "text": "Due to the fact that",
+          "type": "concision",
+          "improved": "Because"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "high volume",
+          "improved": "large number",
+          "reason": "More precise language"
+        }
+      ]
+    },
+    {
+      "id": "D1",
+      "ok": true,
+      "category": "mixed",
+      "context": "Essay",
+      "text": "In modern society, technology have changed the way we live. Many people thinks that this is a bad development, but I disagree. For example, the internet allow us to communicate instantly with people all over the world. On the other hand, some argue that we spend to much time looking at screens. In my opinion, we should use these tools wisely rather than rejecting them completely.",
+      "score": 73,
+      "errors": [
+        {
+          "text": "technology have",
+          "should_be": "technology has",
+          "reason": "subject-verb agreement"
+        },
+        {
+          "text": "Many people thinks",
+          "should_be": "Many people think",
+          "reason": "subject-verb agreement"
+        },
+        {
+          "text": "we spend to much time",
+          "should_be": "we spend too much time",
+          "reason": "correct use of 'too' instead of 'to'"
+        },
+        {
+          "text": "the internet allow",
+          "should_be": "the internet allows",
+          "reason": "subject-verb agreement"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "In my opinion",
+          "type": "clarity",
+          "improved": "In my view"
+        },
+        {
+          "text": "rather than rejecting them completely",
+          "type": "concision",
+          "improved": "rather than outright rejection"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "bad",
+          "improved": "negative",
+          "reason": "more precise vocabulary"
+        },
+        {
+          "original": "wisely",
+          "improved": "judiciously",
+          "reason": "more formal and sophisticated vocabulary"
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "ok": true,
+      "category": "mixed",
+      "context": "Cover letter",
+      "text": "Dear Hiring Manager, I am writing to express my interest in the Product Manager position. I have five years of experience in this field and I led a team that launch three successful products. I am confident that my skills would make me a valuable addition to your company. Please find my resume attached.",
+      "score": 88,
+      "errors": [
+        {
+          "text": "that launch",
+          "should_be": "that launched",
+          "reason": "verb tense consistency"
+        }
+      ],
+      "suggestions": [
+        {
+          "text": "I am writing to express my interest in the Product Manager position",
+          "type": "concision",
+          "improved": "I am excited to apply for the Product Manager position"
+        },
+        {
+          "text": "I have five years of experience in this field",
+          "type": "word_choice",
+          "improved": "With five years of experience in this field"
+        }
+      ],
+      "alternatives": [
+        {
+          "original": "valuable",
+          "improved": "invaluable",
+          "reason": "stronger adjective"
+        },
+        {
+          "original": "successful",
+          "improved": "groundbreaking",
+          "reason": "more descriptive adjective"
+        }
+      ]
+    }
+  ]
+}

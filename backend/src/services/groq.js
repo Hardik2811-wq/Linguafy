@@ -24,7 +24,7 @@ TEXT TO ANALYZE:
 Return STRICT JSON with EXACTLY these fields:
 {
   "errors": [{"text": "quoted fragment", "should_be": "correction", "reason": "short grammar/spelling explanation"}],
-  "suggestions": [{"text": "what to improve", "type": "clarity|style|register|structure|concision|word_choice", "improved": "a concrete rewritten example"}],
+  "suggestions": [{"text": "EXACT verbatim substring copied from the user's writing that is being improved", "type": "clarity|style|register|structure|concision|word_choice", "improved": "the replacement that fits in that same spot"}],
   "tone": "formal|neutral|informal|casual",
   "tone_feedback": "one-sentence assessment",
   "alternatives": [{"original": "word or short phrase", "improved": "stronger replacement", "reason": "one-liner"}],
@@ -36,7 +36,7 @@ STRICT RULES:
 2. NEVER report style preferences, optional punctuation (incl. commas before quotation marks), register choices, active-vs-passive, or rewording as errors. Those go in "suggestions".
 3. Evaluate relative to the context: for "Casual message" apply a relaxed informal standard — missing capitals, missing punctuation, and contractions like "wanna/im/gonna" are NORMAL and must NOT be errors. For "Essay"/"Cover letter"/"Professional email" apply a strict formal standard.
 4. Neutral professional text is never called "informal", and a correct plain sentence gets grammar≈100, tone≈95+. If the text is already correct, return empty "errors" AND empty "suggestions".
-5. "suggestions" must be specific and actual improvements — each MUST contain an "improved" rewritten example that differs from the original. Never echo the text verbatim. Max 3.
+5. "suggestions" must be specific and actual improvements — each MUST contain an "improved" replacement that differs from the original. CRITICAL: "text" must be quoted character-for-character (verbsatim) from the user's writing, so the learner can find it. Never summarize or paraphrase it, never vague text like "the sentence". Max 3.
 6. "alternatives" are single-word or short-phrase lexical upgrades with reasons — NOT whole-sentence rewrites. Max 3.`, 1100);
 export const checkVocabulary = (word, sentence) => jsonCompletion(`Target word: "${word}"\nStudent sentence: "${sentence}"\n\nReturn {word_correct:boolean, grammar_correct:boolean, sophistication_score:number 1-10, feedback:string, better_version:string|null}.`, 350);
 export const scoreEssay = (text) => jsonCompletion(`Act as an official IELTS Writing Task 2 examiner. Score this essay:\n\n"${text}"\n\nReturn {task_achievement:number 0-9, coherence_cohesion:number 0-9, lexical_resource:number 0-9, grammatical_accuracy:number 0-9, band_estimate:number 0-9, feedback:string, common_errors:string[]}.`, 700);

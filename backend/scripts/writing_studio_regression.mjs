@@ -53,25 +53,32 @@ async function callWithRetry(fn, { label, attempts = 6, baseMs = 1500 } = {}) {
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
 
-function evaluate(raw) {
+function evaluate(raw, sourceText) {
   const errors = raw.errors || [];
   const suggestions = raw.suggestions || [];
   const breakdown = raw.score_breakdown || {};
   const score = Math.round((Number(breakdown.grammar || 70) + Number(breakdown.tone || 70) + Number(breakdown.vocabulary || 70)) / 3);
   const alts = (raw.alternatives || []).map((a) => typeof a === 'string' ? { improved: a } : a);
 
-  // suggestion quality: has improved field, and improved is not a verbatim echo of the suggestion text
+  // suggestion quality: has a real improved field that isn't an echo of the text
   const goodSugg = suggestions.filter((s) => {
     const improved = String(s.improved || '').trim();
     const base = String(s.text || '').trim();
-    return improved.length > base.length * 0.5 && norm(improved) !== norm(base);
+    return improved.length > 0 && norm(improved) !== norm(base);
   }).length;
   const echoSugg = suggestions.length - goodSugg;
+
+  // verbatim reference: does "text" point at an actual substring of the learner's writing?
+  const flat = norm(sourceText);
+  const refSugg = suggestions.filter((s) => {
+    const t = String(s.text || '').trim();
+    return t.length >= 3 && flat.includes(norm(t));
+  }).length;
 
   // alternative quality: word/short-phrase lexical upgrades (improved under ~8 words)
   const goodAlt = alts.filter((a) => String(a.improved || '').trim().split(/\s+/).length <= 8).length;
 
-  return { errors, suggestions, goodSugg, echoSugg, alts, goodAlt, score };
+  return { errors, suggestions, goodSugg, echoSugg, refSugg, alts, goodAlt, score };
 }
 
 async function main() {
@@ -85,7 +92,7 @@ async function main() {
     const started = Date.now();
     try {
       const raw = await callWithRetry(() => analyzeWriting(c.text, c.context), { label: c.id });
-      const e = evaluate(raw);
+      const e = evaluate(raw, c.text);
       return { ...c, ok: true, ...e, ms: Date.now() - started, raw };
     } catch (err) {
       return { ...c, ok: false, error: err.message, ms: Date.now() - started };
@@ -105,9 +112,9 @@ async function main() {
     console.log(`[${r.ok ? 'OK ' : 'ERR'}] ${r.id} (${r.category}) ${r.ms}ms`);
     console.log(`   text: ${r.text.slice(0, 90)}${r.text.length > 90 ? '…' : ''}`);
     if (!r.ok) { console.log(`   FAIL: ${r.error}\n`); continue; }
-    console.log(`   score=${r.score}  errors=${r.errors.length}  suggestions=${r.suggestions.length} (${r.goodSugg} actionable)  alternatives=${r.alts.length}`);
+    console.log(`   score=${r.score}  errors=${r.errors.length}  suggestions=${r.suggestions.length} (${r.goodSugg} actionable, ${r.refSugg}/${r.suggestions.length} verbatim)  alternatives=${r.alts.length}`);
     if (r.errors.length) console.log(`   err : ${r.errors.slice(0, 3).map((e) => `"${e.text}"→"${e.should_be}"`).join(' · ')}`);
-    if (r.suggestions.length) console.log(`   sugg: ${r.suggestions.slice(0, 2).map((s) => `[${s.type || '?'}] ${(s.improved || '(no fix)').slice(0, 70)}`).join(' ▸ ')}`);
+    if (r.suggestions.length) console.log(`   sugg: ${r.suggestions.slice(0, 2).map((s) => `[${s.type || '?'}] “${(s.text || '').slice(0, 45)}” → “${(s.improved || '').slice(0, 45)}”`).join(' ▸ ')}`);
     console.log('');
   }
 
@@ -123,6 +130,7 @@ async function main() {
     hit: r.expectErrorIn.some((k) => r.errors.some((e) => (norm(e.text) + ' ' + norm(e.should_be)).includes(norm(k)))) }));
   const allSugg = results.filter((r) => r.ok).flatMap((r) => r.suggestions);
   const actionableRate = allSugg.length ? Math.round(results.filter((r) => r.ok).reduce((s, r) => s + r.goodSugg, 0) / allSugg.length * 100) : 100;
+  const refRate = allSugg.length ? Math.round(results.filter((r) => r.ok).reduce((s, r) => s + r.refSugg, 0) / allSugg.length * 100) : 100;
   const altDensity = results.filter((r) => r.ok).reduce((s, r) => s + (r.alts.length ? 1 : 0), 0) / results.filter((r) => r.ok).length;
   const avgScore = Math.round(results.filter((r) => r.ok).reduce((s, r) => s + r.score, 0) / results.filter((r) => r.ok).length);
 
@@ -131,12 +139,12 @@ async function main() {
   const precision = (1 - fp / casesN) * 100;
   const recallN = [...recall, ...mixedRecall.map((m) => m.hit)].filter(Boolean).length;
   const recallTotal = recall.length + mixedRecall.length;
-  const IQI = Math.round((0.4 * precision) + (0.25 * (recallTotal ? (recallN / recallTotal) * 100 : 100)) + (0.2 * actionableRate) + (0.15 * (altDensity * 100)));
+  const IQI = Math.round((0.35 * precision) + (0.2 * (recallTotal ? (recallN / recallTotal) * 100 : 100)) + (0.2 * actionableRate) + (0.15 * (altDensity * 100)) + (0.1 * refRate));
 
   console.log(`Clean false positives: ${fpClean.length}/${clean.length}   Style wrongly-flagged: ${fpStyle.length}/${style.length}`);
-  console.log(`Error recall: ${recallN}/${recallTotal}   Actionable suggestions: ${actionableRate}%   Alt coverage: ${Math.round(altDensity * 100)}%   Avg score: ${avgScore}`);
+  console.log(`Error recall: ${recallN}/${recallTotal}   Actionable suggestions: ${actionableRate}%   Verbatim references: ${refRate}%   Alt coverage: ${Math.round(altDensity * 100)}%   Avg score: ${avgScore}`);
   console.log(`INDUSTRIAL QUALITY INDEX (IQI) = ${IQI}/100`);
-  console.log(`  → precision ${Math.round(precision)}% | recall ${Math.round(recallN / recallTotal * 100)}% | sugg-actionability ${actionableRate}% | alt-coverage ${Math.round(altDensity * 100)}%`);
+  console.log(`  → precision ${Math.round(precision)}% | recall ${Math.round(recallN / recallTotal * 100)}% | sugg-actionability ${actionableRate}% | verbatim-refs ${refRate}% | alt-coverage ${Math.round(altDensity * 100)}%`);
 
   clean.forEach((r) => { if (r.errors.length) console.log(`   FP clean ${r.id}: ${r.errors.map((e) => e.text).join(' | ')}`); });
   style.forEach((r) => { if (r.errors.length) console.log(`   FP style ${r.id}: ${r.errors.map((e) => e.text).join(' | ')}`); });
