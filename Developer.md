@@ -13,6 +13,9 @@ API, Groq AI, optional Supabase database).
 >   blueprint (superseded by V2 for backend decisions).
 > - `README.md` — run guide + deployment steps for the live site.
 > - `GitWorkFlow.md` — how to branch, PR, and merge.
+> - `CODE_AUDIT_REPORT.md` — 19-item forensic audit (security, correctness,
+>   UI, tooling) produced against the running app; the basis for the
+>   `audit_work/` artefacts.
 
 ---
 
@@ -72,12 +75,21 @@ English Trainer/
 │                                       (no vite.config file — Vite defaults)
 ├── README.md                         # run guide + Vercel deployment steps
 ├── AboutProject.md                   # product guide: modules, API, schema
+├── CODE_AUDIT_REPORT.md              # 19-item forensic code audit (2026-08-12)
 ├── Developer.md                      # this file
 ├── English_Learning_App_Development_Plan.md   # original product blueprint
 ├── Linguafy_Development_Plan_V2.md            # executed 8-week build plan
 ├── GitWorkFlow.md                    # branch/PR/merge guide
 ├── linguafy_upload.zip               # committed: old dist/ build (archived)
 ├── linguafy-brand-assets.zip         # committed: favicon + app icon PNGs
+├── audit_work/                       # audit builder + artefacts (see §6.6)
+│   ├── package.json                  # exceljs (only dependency)
+│   ├── build_audit.mjs               # WIP generator — imports non-existent pkg; broken
+│   ├── make_xlsx.mjs                 # working generator (exceljs) → outputs/
+│   └── outputs/20260812-linguafy-audit/
+│       ├── linguafy-code-audit.xlsx  # 5-sheet Excel report (Dashboard, Findings,
+│       │                             #   Fix Roadmap, Verified Working, DB Checks)
+│       └── findings.json             # machine-readable copy of the 19 findings
 ├── scripts/
 │   └── push_to_github.ps1            # helper: stage, commit, rebase, push
 ├── supabase/
@@ -288,6 +300,24 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 | `conversation.js` | `POST /conversation/send`                  | Creates session on first turn (or reuses `session_id`), replays history to Groq, stores turn + grammar notes. |
 | `dashboard.js`    | `GET /user/progress`                       | Aggregates writing/grammar/vocab/exam/conversation per user into `this_week` stats + `weak_areas` + `recommendations`. |
 
+### 6.6 `audit_work/` — code audit builder
+
+Separate throwaway Node project (its own `package.json`, only dep is `exceljs`).
+Generates the 19-finding audit report from `CODE_AUDIT_REPORT.md`:
+
+- **`make_xlsx.mjs`** — the working generator. Writes
+  `outputs/20260812-linguafy-audit/linguafy-code-audit.xlsx` (5 sheets) +
+  `findings.json`. Run with `node make_xlsx.mjs` from anywhere — output dir is
+  resolved via `import.meta.url`, so it always lands under `audit_work/outputs/`.
+  **Gotcha:** every fill object must include `type: 'pattern'`; ExcelJS 4.4.0
+  silently drops fills without it, leaving dangling `fillId`s that make Excel
+  want to repair the file. Data validations must be added as a single
+  `dataValidations.add('E5:E23', …)` range, not per-cell (per-cell produces
+  overlapping ranges Excel also flags).
+- **`build_audit.mjs`** — an alternative generator that imports
+  `@oai/artifact-tool`, a package that does **not** exist on npm. It cannot
+  run; kept for reference only. Use `make_xlsx.mjs` instead.
+
 ---
 
 ## 7. Database Design (Supabase)
@@ -392,6 +422,11 @@ Writing "Get feedback":
 5. Replace the "3 correct uses" mastery rule with a real spaced-repetition
    schedule (the schema already stores `next_review`).
 
+> The prioritized fix order for all of the above (starting with the two
+> Critical security findings — local-mode auth bypass and plaintext
+> passwords) is tracked in `CODE_AUDIT_REPORT.md` and the "Fix Roadmap"
+> sheet of `audit_work/outputs/…/linguafy-code-audit.xlsx`.
+
 **Future refactor of `src/main.jsx`**
 ```
 src/
@@ -426,6 +461,8 @@ src/
 | Change DB schema / seed data          | `supabase/schema.sql`, `supabase/seed.sql` |
 | Understand product behavior           | `AboutProject.md` |
 | Understand the executed build plan    | `Linguafy_Development_Plan_V2.md` |
+| See known bugs / what to fix first    | `CODE_AUDIT_REPORT.md` + `audit_work/outputs/…/linguafy-code-audit.xlsx` (Fix Roadmap) |
+| Regenerate the audit XLSX             | `cd audit_work && node make_xlsx.mjs` |
 | Run the app locally                   | `backend: npm run dev` → :4000 · `frontend: npm run dev` → :5173 |
 | Deploy                                | `README.md` (Vercel; two projects — frontend + backend) |
 | Git workflow                          | `GitWorkFlow.md` |
