@@ -1,0 +1,401 @@
+[
+  {
+    "id": "F-01",
+    "priority": 1,
+    "module": "Auth",
+    "component": "Backend auth",
+    "status": "Open",
+    "severity": "Critical",
+    "type": "Security bug",
+    "effort": "1-2d",
+    "hours": 12,
+    "file": "backend/src/middleware/auth.js; backend/src/services/local.js",
+    "lines": "auth.js:9; local.js:13-16",
+    "broken": "The login check accepts any token starting with \"local-\", and unknown ids fall back to a default \"Learner\" account instead of being rejected.",
+    "impact": "Any client can access every protected endpoint without an account, and reads/writes data under a shared default identity.",
+    "evidence": "VERIFIED LIVE: sent \"Authorization: Bearer local-banana\" -> server returned 200 with a default user profile + progress.",
+    "fix": "Issue signed tokens (HMAC) mapped to real user ids; return 401/404 when the id is unknown. Never fall back to a default account.",
+    "test": "curl -H \"Authorization: Bearer local-banana\" http://localhost:4000/api/user/progress -> now 200, must be 401.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/middleware/auth.js"
+    }
+  },
+  {
+    "id": "F-02",
+    "priority": 2,
+    "module": "Auth",
+    "component": "Backend auth",
+    "status": "Open",
+    "severity": "Critical",
+    "type": "Security bug",
+    "effort": "0.5-1d",
+    "hours": 6,
+    "file": "backend/src/services/local.js; backend/src/routes/auth.js",
+    "lines": "local.js:14; auth.js:15,30",
+    "broken": "Passwords are stored unhashed in local mode and are returned verbatim in the signup, login and /me responses.",
+    "impact": "If the store or any API response is exposed or sniffed, credentials leak in cleartext.",
+    "evidence": "VERIFIED LIVE: signup and /me both echoed \"password\":\"password123\".",
+    "fix": "Hash with bcrypt/argon2; never serialize the password field in any JSON response. (Supabase mode already hashes via admin.createUser.)",
+    "test": "Sign up in local mode and inspect the response body for the raw password.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/services/local.js"
+    }
+  },
+  {
+    "id": "F-03",
+    "priority": 3,
+    "module": "Config",
+    "component": "Backend config",
+    "status": "Open",
+    "severity": "High",
+    "type": "Config gap",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "backend/.env; backend/.env.example; backend/src/config.js",
+    "lines": "config.js:17,21; .env:1-3",
+    "broken": "GROQ_API_KEY only exists in the git-ignored backend/.env.local. A fresh clone has no key.",
+    "impact": "Every AI route (writing, vocab, exam, conversation) returns 503 \"Server is missing: groqApiKey\".",
+    "evidence": "VERIFIED LIVE: reproduced the 503 for all four AI routes.",
+    "fix": "Document the key requirement in README + .env.example; add a startup warning when the key is absent.",
+    "test": "Clone fresh, run backend, call /api/feedback/analyze-text.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/.env"
+    }
+  },
+  {
+    "id": "F-04",
+    "priority": 4,
+    "module": "Config",
+    "component": "Backend config",
+    "status": "Open",
+    "severity": "High",
+    "type": "Infra risk",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "backend/src/config.js; backend/src/services/groq.js",
+    "lines": "config.js:2-3",
+    "broken": ".env and .env.local are loaded with CWD-relative paths, so the secrets only load when the server is started from the backend/ folder.",
+    "impact": "Process managers, test harnesses, or deployments launched from another folder silently lose all secrets -> confusing AI outages.",
+    "evidence": "VERIFIED LIVE: same code returned 503 groqApiKey from a different working directory, worked when CWD = backend/.",
+    "fix": "Resolve env paths relative to the module (import.meta.url) or fail fast with a clear error.",
+    "test": "Start \"node src/index.js\" from the repo root instead of backend/.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/config.js"
+    }
+  },
+  {
+    "id": "F-05",
+    "priority": 5,
+    "module": "Exam",
+    "component": "Environment defaults",
+    "status": "Open",
+    "severity": "High",
+    "type": "Validation mismatch",
+    "effort": "1d",
+    "hours": 8,
+    "file": "src/api.js; backend/src/routes/exam.js; src/main.jsx",
+    "lines": "api.js:1; exam.js:10; main.jsx:98",
+    "broken": "UI says \"Write at least 250 words\", but the client only blocks under 25 words and the backend only requires 150 characters (~25 words). When the 40-min timer hits 0 it just stops counting; work is never auto-submitted.",
+    "impact": "Undersized essays get scored with unreliable band estimates; a user can lose work silently at timeout.",
+    "evidence": "VERIFIED LIVE: a ~30-word essay passed validation and was accepted for scoring.",
+    "fix": "Enforce 250 words on both client and server; decide timer-expiry behaviour (auto-submit or clear warning).",
+    "test": "Submit a 30-word essay -> currently accepted.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/src/api.js"
+    }
+  },
+  {
+    "id": "F-06",
+    "priority": 6,
+    "module": "Grammar",
+    "component": "Grammar drills",
+    "status": "Open",
+    "severity": "High",
+    "type": "Bug",
+    "effort": "0.5-1d",
+    "hours": 6,
+    "file": "backend/src/routes/grammar.js",
+    "lines": "grammar.js:10-12",
+    "broken": "The query applies .limit(1) BEFORE choosing randomly, so the \"random\" drill is sampled from at most one row. The ?pillar= filter shares the same flaw and difficulty is never surfaced.",
+    "impact": "Users effectively see a single drill; pillar/difficulty filters do not work as intended.",
+    "evidence": "Static + local-mode trace (local mode correctly uses the full array; Supabase mode is broken by the query shape).",
+    "fix": "Fetch the candidate set (or a random offset) then pick randomly; return difficulty.",
+    "test": "Call GET /api/drills/grammar?pillar=subjunctive repeatedly in Supabase mode -> same row.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/routes/grammar.js"
+    }
+  },
+  {
+    "id": "F-07",
+    "priority": 7,
+    "module": "Vocabulary",
+    "component": "Vocabulary progress",
+    "status": "Open",
+    "severity": "High",
+    "type": "Logic bug",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "backend/src/routes/vocabulary.js",
+    "lines": "vocabulary.js:19,23-25",
+    "broken": "Mastery = correct && attempts >= 3, so the third attempt can mark a word \"mastered\" even if only the latest answer is correct. The feature promises \"three correct uses\".",
+    "impact": "Words are falsely mastered; the dashboard \"words mastered\" stat is inflated.",
+    "evidence": "Static: code path traced for both local and Supabase modes.",
+    "fix": "Count actual correct uses (streak or cumulative corrects) instead of attempts.",
+    "test": "Answer wrong, wrong, right -> currently mastered=true.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/routes/vocabulary.js"
+    }
+  },
+  {
+    "id": "F-08",
+    "priority": 8,
+    "module": "Auth",
+    "component": "Frontend auth/session",
+    "status": "Open",
+    "severity": "High",
+    "type": "Bug",
+    "effort": "1d",
+    "hours": 8,
+    "file": "src/main.jsx; src/api.js",
+    "lines": "main.jsx:33-40; api.js:3-9",
+    "broken": "Auth is hydrated only from localStorage and never revalidated with /api/auth/me on startup. Expired/stale tokens keep showing a logged-in user until a request fails.",
+    "impact": "Users see a stale session; no refresh path or forced sign-out.",
+    "evidence": "Grep confirmed /api/auth/me is never called by the frontend.",
+    "fix": "On mount, if a token exists call /api/auth/me; on failure clear the session.",
+    "test": "Inject a bogus token in localStorage and reload the app.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/src/main.jsx"
+    }
+  },
+  {
+    "id": "F-09",
+    "priority": 9,
+    "module": "Dashboard",
+    "component": "Dashboard analytics",
+    "status": "Open",
+    "severity": "High",
+    "type": "Missing feature",
+    "effort": "1d",
+    "hours": 8,
+    "file": "backend/src/routes/dashboard.js",
+    "lines": "dashboard.js:10-21",
+    "broken": "The response is labeled this_week but the DB queries aggregate all rows with no date filter.",
+    "impact": "Weekly chart, accuracy, and counts are lifetime totals and never reset each week.",
+    "evidence": "Static: no created_at filter anywhere in dashboard.js.",
+    "fix": "Add created_at >= now() - interval '7 days' to each aggregate.",
+    "test": "Query /api/user/progress, wait a week, numbers never reset.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/routes/dashboard.js"
+    }
+  },
+  {
+    "id": "F-10",
+    "priority": 10,
+    "module": "Dashboard",
+    "component": "Dashboard recommendations",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Unused feature",
+    "effort": "1d",
+    "hours": 8,
+    "file": "backend/src/routes/dashboard.js; src/main.jsx",
+    "lines": "dashboard.js:20-21; main.jsx:74-77",
+    "broken": "The backend computes weak_areas/recommendations but the frontend never reads them. The Overview \"Recommended for you\" card is hardcoded to \"subject-verb agreement\" for every user.",
+    "impact": "Personalized recommendations are shown to no one; every user sees the same suggestion.",
+    "evidence": "Grep confirmed the frontend uses neither weak_areas nor recommendations.",
+    "fix": "Wire Overview to weak_areas and render real recommendation text.",
+    "test": "Complete a drill on a pillar; check the Overview recommendation changes.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/routes/dashboard.js"
+    }
+  },
+  {
+    "id": "F-11",
+    "priority": 11,
+    "module": "Vocabulary",
+    "component": "Vocabulary spaced repetition",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Incomplete feature",
+    "effort": "1-2d",
+    "hours": 12,
+    "file": "backend/src/routes/vocabulary.js; src/main.jsx",
+    "lines": "vocabulary.js:24; main.jsx:96",
+    "broken": "next_review is set on every attempt but never queried. \"Word of the day\" is chosen purely by calendar-day index (floor(time/86400000) % wordCount), so mastered words resurface and the \"Spaced repetition\" UI card does nothing.",
+    "impact": "The learning science behind the feature is fake; mastered words come back at random.",
+    "evidence": "Static: next_review is written but never read anywhere.",
+    "fix": "Query next_review to select review words; implement a real SRS schedule.",
+    "test": "Master a word, then wait for the calendar index to cycle back to it.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/routes/vocabulary.js"
+    }
+  },
+  {
+    "id": "F-12",
+    "priority": 12,
+    "module": "UI",
+    "component": "Overview / Sidebar UI",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Hardcoded UI",
+    "effort": "0.5-1d",
+    "hours": 6,
+    "file": "src/main.jsx",
+    "lines": "main.jsx:63-64,74,77,83",
+    "broken": "The 12-day streak, Upgrade CTA, Vocabulary \"3\" badge, hero chart heights, \"Next question\" 45%/100% progress and the inert \"View report\" button are static. \"Save this rule\" and \"End & review notes\" only fire a toast.",
+    "impact": "UI displays fake stats and dead buttons, misleading users.",
+    "evidence": "Static: values are literals in main.jsx.",
+    "fix": "Drive streak/badges/chart from real data; wire or remove dead buttons.",
+    "test": "Click \"End & review notes\" -> nothing is saved or ended.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/src/main.jsx"
+    }
+  },
+  {
+    "id": "F-13",
+    "priority": 13,
+    "module": "Roleplay",
+    "component": "Roleplay",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Incomplete feature",
+    "effort": "1-2d",
+    "hours": 12,
+    "file": "src/main.jsx; backend/src/routes/conversation.js",
+    "lines": "main.jsx:100; conversation.js:10-18",
+    "broken": "Scenario hardcoded to job_interview; no session list, resume flow, or end summary. Local-mode history is an in-memory Map (lost on restart) and the frontend never reloads persisted history on refresh.",
+    "impact": "Conversations cannot be resumed or reviewed after leaving the page.",
+    "evidence": "Live-tested: AI stays in character and keeps context across turns (works); persistence/resume is the gap.",
+    "fix": "Add scenario selection, persist session_id, reload history on mount, implement end-session summary.",
+    "test": "Have a chat, refresh the page -> history resets to the opening line.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/src/main.jsx"
+    }
+  },
+  {
+    "id": "F-14",
+    "priority": 14,
+    "module": "Writing",
+    "component": "Writing coach",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Prompt quality",
+    "effort": "1d",
+    "hours": 8,
+    "file": "backend/src/services/groq.js; backend/src/routes/writing.js; src/main.jsx",
+    "lines": "groq.js:19; writing.js:13; main.jsx:88,92",
+    "broken": "Style rewrites are returned as grammar \"errors\". A clean sentence was flagged with two \"errors\" (style rewrites) and scored tone 40/100 as \"informal\".",
+    "impact": "Users are told correct English is wrong, eroding trust in the app.",
+    "evidence": "VERIFIED LIVE: \"I am a software developer and I work on this project every day\" -> flagged \"As a software developer\", \"every day\"->\"daily\", tone informal.",
+    "fix": "Split true grammar errors from style suggestions; only render genuine errors as corrections; neutral tone scoring.",
+    "test": "Submit a clean professional sentence in Writing studio.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/services/groq.js"
+    }
+  },
+  {
+    "id": "F-15",
+    "priority": 15,
+    "module": "Vocabulary",
+    "component": "Vocabulary originality",
+    "status": "Open",
+    "severity": "Medium",
+    "type": "Prompt quality",
+    "effort": "1d",
+    "hours": 8,
+    "file": "backend/src/services/groq.js; backend/src/routes/vocabulary.js",
+    "lines": "groq.js:20; vocabulary.js:19,21",
+    "broken": "Submitting the exact copied context example is accepted as a great original answer. No originality/similarity check exists before or inside the Groq call.",
+    "impact": "Students can copy the sample sentence and receive top marks; the \"original use\" promise is unenforced.",
+    "evidence": "VERIFIED LIVE: verbatim example -> correct:true, sophistication 8/10.",
+    "fix": "Add a string/embedding similarity guard against examples before calling Groq; instruct Groq to penalize near-duplicates.",
+    "test": "Copy the on-screen example sentence and submit it.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/services/groq.js"
+    }
+  },
+  {
+    "id": "F-16",
+    "priority": 16,
+    "module": "Build",
+    "component": "Build output",
+    "status": "Open",
+    "severity": "Low",
+    "type": "Deployment risk",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "dist/assets/index-DsUaU2xf.js",
+    "lines": "baked API URL",
+    "broken": "The dist/ build on disk has http://localhost:4000 baked in as the API URL.",
+    "impact": "A deploy of the stale dist/ talks to a local address and breaks the live site.",
+    "evidence": "Inspection of dist JS bundle.",
+    "fix": "Rebuild with VITE_API_URL set before deploying.",
+    "test": "grep localhost:4000 dist/assets/*.js.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/dist/assets/index-DsUaU2xf.js"
+    }
+  },
+  {
+    "id": "F-17",
+    "priority": 17,
+    "module": "Process",
+    "component": "Engineering process",
+    "status": "Open",
+    "severity": "Low",
+    "type": "Missing tooling",
+    "effort": "1-2d",
+    "hours": 12,
+    "file": "package.json; backend/package.json",
+    "lines": "scripts",
+    "broken": "No automated tests, linter, or CI on either side.",
+    "impact": "Nothing guards regressions; security bugs like F-01 can quietly return.",
+    "evidence": "package.json scripts contain only dev/build/preview/start.",
+    "fix": "Add Vitest + supertest, ESLint, and a GitHub Actions CI pipeline.",
+    "test": "n/a - tooling setup.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/package.json"
+    }
+  },
+  {
+    "id": "F-18",
+    "priority": 18,
+    "module": "Backend",
+    "component": "Route mounting",
+    "status": "Open",
+    "severity": "Low",
+    "type": "Structural fragility",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "backend/src/index.js",
+    "lines": "index.js:53-58",
+    "broken": "Three routers mount under /api/feedback (writing, grammar, vocabulary) with no versioning.",
+    "impact": "Fine today, but any future path overlap silently shadows an endpoint.",
+    "evidence": "Static: three app.use(\"/api/feedback\", router) lines.",
+    "fix": "Version the API (e.g. /api/v1/...) and give each router a unique prefix.",
+    "test": "n/a - refactor.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/backend/src/index.js"
+    }
+  },
+  {
+    "id": "F-19",
+    "priority": 19,
+    "module": "Frontend",
+    "component": "Code hygiene",
+    "status": "Open",
+    "severity": "Low",
+    "type": "Dead code",
+    "effort": "0.5d",
+    "hours": 4,
+    "file": "src/main.jsx; src/api.js",
+    "lines": "main.jsx:12-23",
+    "broken": "Unused `feedback` mock constant and unused Play icon import remain. No URL router, so refresh always lands on Overview.",
+    "impact": "Confusing code; users lose their current view on refresh.",
+    "evidence": "Static: feedback constant is not referenced by any component.",
+    "fix": "Delete the mock; add react-router or a simple hash router.",
+    "test": "Click a module, refresh the page -> view resets.",
+    "links": {
+      "file": "file:///D:/hardi/English Trainer/src/main.jsx"
+    }
+  }
+]

@@ -69,13 +69,15 @@ English Trainer/
 ├── package-lock.json                 # generated lockfile (do not edit)
 ├── .gitignore                        # node_modules, dist, .env, .env.local
 ├── .env.local                        # LOCAL ONLY: VITE_API_URL (never commit)
-├── vite config                       # from @vitejs/plugin-react (no config file)
+│                                       (no vite.config file — Vite defaults)
 ├── README.md                         # run guide + Vercel deployment steps
 ├── AboutProject.md                   # product guide: modules, API, schema
 ├── Developer.md                      # this file
 ├── English_Learning_App_Development_Plan.md   # original product blueprint
 ├── Linguafy_Development_Plan_V2.md            # executed 8-week build plan
 ├── GitWorkFlow.md                    # branch/PR/merge guide
+├── linguafy_upload.zip               # committed: old dist/ build (archived)
+├── linguafy-brand-assets.zip         # committed: favicon + app icon PNGs
 ├── scripts/
 │   └── push_to_github.ps1            # helper: stage, commit, rebase, push
 ├── supabase/
@@ -88,6 +90,7 @@ English Trainer/
 │   └── auth.css                      # auth page + exam result styles
 ├── backend/                          # Express API (separate Vercel project)
 │   ├── package.json                  # express, cors, dotenv, zod, groq-sdk, supabase-js
+│   ├── package-lock.json             # generated lockfile (do not edit)
 │   ├── .env                          # non-secret config (PORT, FRONTEND_ORIGIN, GROQ_MODEL)
 │   ├── .env.example                  # template for backend/.env
 │   ├── .env.local                    # LOCAL ONLY: secrets (GROQ_API_KEY) — never commit
@@ -207,7 +210,8 @@ views via `useState`.
 
 **Dead code worth knowing about:** the `feedback` mock constant at the top of
 `src/main.jsx` (lines 12–23) is no longer referenced by any component — safe to
-delete. The `nav` array (lines 25–28) drives the sidebar.
+delete. The `nav` array (lines 25–28) drives the sidebar. The `Play` icon is
+imported from `lucide-react` but never used.
 
 ### 5.3 Styling
 
@@ -373,6 +377,11 @@ Writing "Get feedback":
 - Groq calls are synchronous within a request (no streaming); a Groq outage or
   invalid JSON yields 502/503 to the UI.
 - The old `feedback` mock constant in `src/main.jsx` is dead code.
+- The `dist/` build currently on disk is **stale** — it baked in
+  `http://localhost:4000` as the API URL. Always `npm run build` before
+  deploying (the live Vercel frontend uses its own `VITE_API_URL` env var).
+- Local dev runs the backend in **local mode**: `backend/.env.local` only holds
+  `GROQ_API_KEY` (no Supabase keys), so nothing persists across restarts.
 
 **Recommended next steps**
 1. Split `src/main.jsx` into `components/` + `pages/` (structure below).
