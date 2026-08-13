@@ -152,6 +152,7 @@ so `.env.local` always wins. This lets non-secret defaults live in `.env`
 | `FRONTEND_ORIGIN`        | `backend/.env`   | Comma-separated allowed CORS origins (e.g. the Vercel frontend URL) | `http://localhost:5173` |
 | `ALLOW_ALL_ORIGINS`      | `backend/.env`   | `"true"` bypasses CORS allow-list (dev/testing only) | unset                          |
 | `GROQ_MODEL`             | `backend/.env`   | Groq model used for all AI calls                    | `llama-3.3-70b-versatile`      |
+| `GROQ_FAST_MODEL`        | `backend/.env`   | Cheaper/faster model for simple AI tasks (vocab check); falls back to `GROQ_MODEL` | `GROQ_MODEL` |
 | `GROQ_API_KEY`           | `backend/.env.local` | Groq API key (required for AI feedback)          | —                              |
 | `SUPABASE_URL`           | `backend/.env.local` | Supabase project URL                             | —                              |
 | `SUPABASE_ANON_KEY`      | `backend/.env.local` | Public anon key (login only)                     | —                              |
@@ -279,7 +280,10 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 
 - **`groq.js`** — lazy `Groq` client (throws 503 if no key). `jsonCompletion`
   uses `response_format: { type: 'json_object' }`, temp 0.2; JSON.parse failures
-  become a friendly 502. Exports:
+  become a friendly 502. Writing/vocab/exam results are cached in an in-memory
+  `Map` (FIFO, 300 entries) keyed by `task|input`, so identical re-submissions
+  skip the API. `checkVocabulary` runs on `GROQ_FAST_MODEL`; the rest use
+  `GROQ_MODEL`. Exports:
   - `analyzeWriting(text, context)` → errors/suggestions/tone/alternatives/score_breakdown
   - `checkVocabulary(word, sentence)` → correctness + sophistication 1–10
   - `scoreEssay(text)` → four IELTS criteria + band estimate
@@ -295,9 +299,9 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 | `auth.js`         | signup / login / me                        | signup validates level A1–C2, creates Supabase auth user + profile row, then signs in to return a JWT. Login returns profile from `users` table. |
 | `writing.js`      | `POST /feedback/analyze-text`              | zod: 8–2000 chars. Score = avg of grammar/tone/vocabulary breakdown. Inserts `writing_submissions`. |
 | `grammar.js`      | `GET /drills/grammar`, `POST /feedback/grammar-drill` | Random drill (optional `?pillar=`); answer checked against `correct_answer`, attempt saved, per-pillar accuracy returned. |
-| `vocabulary.js`   | `GET /vocabulary/daily`, `POST /feedback/vocabulary-check` | Daily word chosen by day-index over all words. Sentence AI-checked; upserts `vocabulary_progress`; "mastered" after 3 correct uses. |
+| `vocabulary.js`   | `GET /vocabulary/daily`, `POST /feedback/vocabulary-check` | Daily word chosen by day-index over all words. Sentence first pre-checked locally for the target word — if absent, returns "you haven't used the word" without calling Groq. Otherwise AI-checked; upserts `vocabulary_progress`; "mastered" after 3 correct uses. |
 | `exam.js`         | `POST /exam/submit`                        | zod: ≥150 chars. Groq band scoring; inserts `exam_attempts`. |
-| `conversation.js` | `POST /conversation/send`                  | Creates session on first turn (or reuses `session_id`), replays history to Groq, stores turn + grammar notes. |
+| `conversation.js` | `POST /conversation/send`                  | Creates session on first turn (or reuses `session_id`), stores all turns but only the last 6 are sent to Groq each turn, stores turn + grammar notes. |
 | `dashboard.js`    | `GET /user/progress`                       | Aggregates writing/grammar/vocab/exam/conversation per user into `this_week` stats + `weak_areas` + `recommendations`. |
 
 ### 6.6 `audit_work/` — code audit builder
