@@ -1,6 +1,6 @@
 # Linguafy — English Trainer
 
-Full stack English-learning app: React + Vite frontend, Express API, Groq feedback, and an optional Supabase production database/auth layer.
+Full-stack English-learning app: React + Vite frontend, Express API, Groq feedback, and an optional Supabase production database/auth layer.
 
 ---
 
