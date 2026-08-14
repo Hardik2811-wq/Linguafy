@@ -19,7 +19,9 @@ create table if not exists public.grammar_drills (
 );
 create table if not exists public.grammar_attempts (
   id uuid primary key default uuid_generate_v4(), user_id uuid not null references public.users(id) on delete cascade,
-  drill_id bigint not null references public.grammar_drills(id), user_answer varchar(1) not null, correct boolean not null, created_at timestamptz not null default now()
+  drill_id bigint not null references public.grammar_drills(id), user_answer varchar(1) not null, correct boolean not null,
+  confidence varchar(20) not null default 'sure' check (confidence in ('sure','not_sure')), awarded_points smallint not null default 0 check (awarded_points in (0,1)),
+  time_spent_seconds int not null default 0 check (time_spent_seconds between 0 and 7200), created_at timestamptz not null default now()
 );
 create table if not exists public.vocabulary_words (
   id bigint generated always as identity primary key, word varchar(100) unique not null, definition text not null, context_sentence text not null,
@@ -28,7 +30,13 @@ create table if not exists public.vocabulary_words (
 create table if not exists public.vocabulary_progress (
   id uuid primary key default uuid_generate_v4(), user_id uuid not null references public.users(id) on delete cascade,
   word_id bigint not null references public.vocabulary_words(id), user_sentence text, correct boolean, score int check (score between 1 and 10), attempts int not null default 1,
-  mastered boolean not null default false, last_attempt timestamptz not null default now(), next_review timestamptz, created_at timestamptz not null default now(), unique(user_id, word_id)
+  mastered boolean not null default false, correct_uses int not null default 0, last_attempt timestamptz not null default now(), next_review timestamptz, created_at timestamptz not null default now(), unique(user_id, word_id)
+);
+create table if not exists public.vocabulary_attempts (
+  id uuid primary key default uuid_generate_v4(), user_id uuid not null references public.users(id) on delete cascade,
+  word_id bigint not null references public.vocabulary_words(id), user_sentence text not null, correct boolean not null,
+  sophistication_score int check (sophistication_score between 1 and 10), time_spent_seconds int not null default 0 check (time_spent_seconds between 0 and 7200),
+  created_at timestamptz not null default now()
 );
 create table if not exists public.exam_attempts (
   id uuid primary key default uuid_generate_v4(), user_id uuid not null references public.users(id) on delete cascade,
@@ -41,7 +49,15 @@ create table if not exists public.conversation_turns (
   id uuid primary key default uuid_generate_v4(), session_id uuid not null references public.conversation_sessions(id) on delete cascade,
   user_message text not null, bot_response text not null, grammar_notes jsonb default '[]'::jsonb, turn_number int not null, created_at timestamptz not null default now()
 );
-create index if not exists idx_writing_user on public.writing_submissions(user_id); create index if not exists idx_grammar_user on public.grammar_attempts(user_id); create index if not exists idx_vocab_user on public.vocabulary_progress(user_id); create index if not exists idx_exam_user on public.exam_attempts(user_id);
+create index if not exists idx_writing_user on public.writing_submissions(user_id); create index if not exists idx_grammar_user on public.grammar_attempts(user_id); create index if not exists idx_vocab_user on public.vocabulary_progress(user_id); create index if not exists idx_vocab_attempts_user on public.vocabulary_attempts(user_id); create index if not exists idx_exam_user on public.exam_attempts(user_id);
 
-alter table public.users enable row level security; alter table public.writing_submissions enable row level security; alter table public.grammar_attempts enable row level security; alter table public.vocabulary_progress enable row level security; alter table public.exam_attempts enable row level security; alter table public.conversation_sessions enable row level security; alter table public.conversation_turns enable row level security;
+-- Safe upgrades for Supabase projects created before learning analytics was added.
+alter table public.grammar_attempts add column if not exists confidence varchar(20) not null default 'sure' check (confidence in ('sure','not_sure'));
+alter table public.grammar_attempts add column if not exists awarded_points smallint not null default 0 check (awarded_points in (0,1));
+alter table public.grammar_attempts add column if not exists time_spent_seconds int not null default 0 check (time_spent_seconds between 0 and 7200);
+alter table public.vocabulary_progress add column if not exists correct_uses int not null default 0;
+update public.grammar_attempts set awarded_points = 1 where correct = true and confidence = 'sure' and awarded_points = 0;
+update public.vocabulary_progress set correct_uses = attempts where correct = true and correct_uses = 0;
+
+alter table public.users enable row level security; alter table public.writing_submissions enable row level security; alter table public.grammar_attempts enable row level security; alter table public.vocabulary_progress enable row level security; alter table public.vocabulary_attempts enable row level security; alter table public.exam_attempts enable row level security; alter table public.conversation_sessions enable row level security; alter table public.conversation_turns enable row level security;
 -- The API uses the service-role key; it bypasses RLS. Do not expose that key to the browser.
