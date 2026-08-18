@@ -25,7 +25,30 @@ function App() {
   const [view, setView] = useState('overview');
   const [toast, setToast] = useState('');
   const [user, setUser] = useState(getStoredUser());
+  const [placementDone, setPlacementDone] = useState(() => localStorage.getItem('linguafy_placement_done') === 'true');
   const notify = (message) => { setToast(message); setTimeout(() => setToast(''), 2600); };
+
+  // Check placement status on login / mount
+  useEffect(() => {
+    if (!user) return;
+    api('/api/placement/latest').then(data => {
+      if (data?.hasAttempt) {
+        setPlacementDone(true);
+        localStorage.setItem('linguafy_placement_done', 'true');
+      } else {
+        setPlacementDone(false);
+        localStorage.removeItem('linguafy_placement_done');
+        setView('placement');
+      }
+    }).catch(() => {});
+  }, [user]);
+
+  // Force placement view when guard is active
+  const needsPlacement = user && !placementDone;
+  const guardedSetView = (v) => {
+    if (needsPlacement && v !== 'placement') return;
+    setView(v);
+  };
 
   const handleLevelUpdated = (newLevel) => {
     const updated = { ...user, level: newLevel };
@@ -37,13 +60,27 @@ function App() {
     }
   };
 
+  const handlePlacementCompleted = (finalLevel) => {
+    handleLevelUpdated(finalLevel);
+    setPlacementDone(true);
+    localStorage.setItem('linguafy_placement_done', 'true');
+    notify('🎉 Workspace unlocked! Welcome to your personalized dashboard.');
+  };
+
+  const handleAuthenticated = (session) => {
+    setSession(session);
+    setUser(session.user);
+    // New signups (or users who haven't done placement) will be caught by useEffect above
+    notify(`Welcome, ${session.user.name}`);
+  };
+
   return <div className="shell">
-    <Sidebar view={view} setView={setView} user={user} onSignOut={() => { clearSession(); setUser(null); notify('You have been signed out'); }} />
+    <Sidebar view={view} setView={guardedSetView} user={user} locked={needsPlacement} onSignOut={() => { clearSession(); setUser(null); setPlacementDone(false); localStorage.removeItem('linguafy_placement_done'); notify('You have been signed out'); }} />
     <main className="main">
       <Topbar user={user} />
-      {!user ? <Auth onAuthenticated={(session) => { setSession(session); setUser(session.user); notify(`Welcome, ${session.user.name}`); }} /> : <>
-        {view === 'overview' && <Overview setView={setView} user={user} />}
-        {view === 'placement' && <PlacementTest setView={setView} notify={notify} user={user} onLevelUpdated={handleLevelUpdated} />}
+      {!user ? <Auth onAuthenticated={handleAuthenticated} /> : <>
+        {view === 'overview' && <Overview setView={guardedSetView} user={user} />}
+        {view === 'placement' && <PlacementTest setView={guardedSetView} notify={notify} user={user} onLevelUpdated={handleLevelUpdated} onPlacementCompleted={handlePlacementCompleted} isOnboarding={needsPlacement} />}
         {view === 'writing' && <Writing notify={notify} />}
         {view === 'grammar' && <GrammarEnhanced notify={notify} />}
         {view === 'vocabulary' && <VocabularyEnhanced notify={notify} />}
@@ -57,9 +94,10 @@ function App() {
 
 function Auth({ onAuthenticated }) {
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', languageLevel: 'B2' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', estimatedLevel: 'confident' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const submit = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -77,17 +115,43 @@ function Auth({ onAuthenticated }) {
     }
   };
 
+  const levels = [
+    { id: 'beginner', title: 'Total Beginner', icon: '🌱', desc: 'Starting from scratch' },
+    { id: 'daily', title: 'Daily Conversational', icon: '💬', desc: 'Basic everyday English' },
+    { id: 'confident', title: 'Confident Speaker', icon: '🚀', desc: 'Comfortable, learning more' },
+    { id: 'fluent', title: 'Fluent / Expert', icon: '🎓', desc: 'Professional or academic' }
+  ];
+
   return <section className="auth-page">
-    <div className="auth-card">
+    <div className={`auth-card ${mode === 'signup' ? 'auth-card-large' : ''}`}>
       <span className="brand-mark"><Sparkles size={19}/></span>
       <span className="eyebrow">YOUR LEARNING SPACE</span>
       <h1>{mode === 'login' ? 'Welcome back.' : 'Start learning with clarity.'}</h1>
       <p>{mode === 'login' ? 'Sign in to access your saved practice and progress.' : 'Create your free account to save feedback and track your improvement.'}</p>
       <form onSubmit={submit}>
-        {mode === 'signup' && <label>Name<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your name"/></label>}
-        <label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com"/></label>
+        <div className={mode === 'signup' ? 'auth-form-row' : ''}>
+          {mode === 'signup' && <label>Name<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your name"/></label>}
+          <label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com"/></label>
+        </div>
         <label>Password<input required type="password" minLength="8" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters"/></label>
-        {mode === 'signup' && <label>Current level<select value={form.languageLevel} onChange={e => setForm({ ...form, languageLevel: e.target.value })}>{['A1','A2','B1','B2','C1','C2'].map(level => <option key={level}>{level}</option>)}</select></label>}
+        
+        {mode === 'signup' && (
+          <div className="auth-level-picker">
+            <label>How comfortable are you with English?</label>
+            <div className="auth-level-grid">
+              {levels.map(l => (
+                <div key={l.id} className={`auth-level-card ${form.estimatedLevel === l.id ? 'selected' : ''}`} onClick={() => setForm({ ...form, estimatedLevel: l.id })}>
+                  <div className="auth-level-icon">{l.icon}</div>
+                  <div className="auth-level-text">
+                    <b>{l.title}</b>
+                    <span>{l.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         {error && <p className="form-error">{error}</p>}
         <button className="primary auth-submit" disabled={loading}>
           {loading ? <><span className="loader"/> Please wait</> : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={16}/>
@@ -100,7 +164,7 @@ function Auth({ onAuthenticated }) {
   </section>;
 }
 
-function Sidebar({ view, setView, user, onSignOut }) {
+function Sidebar({ view, setView, user, onSignOut, locked }) {
   return <aside className="sidebar">
     <div className="brand"><span className="brand-mark"><Sparkles size={19}/></span><span>Linguafy</span></div>
     <div className="workspace">
@@ -109,14 +173,18 @@ function Sidebar({ view, setView, user, onSignOut }) {
       <ChevronDown size={16}/>
     </div>
     <nav>
-      {nav.map(([id, label, Icon]) => (
-        <button key={id} className={view === id ? 'nav-link active' : 'nav-link'} onClick={() => setView(id)}>
-          <Icon size={18}/>
-          <span>{label}</span>
-          {id === 'placement' && <i style={{ background: '#7057e8' }}>Test</i>}
-          {id === 'vocabulary' && <i>3</i>}
-        </button>
-      ))}
+      {nav.map(([id, label, Icon]) => {
+        const isLocked = locked && id !== 'placement';
+        return (
+          <button key={id} className={`nav-link ${view === id ? 'active' : ''} ${isLocked ? 'locked' : ''}`} onClick={() => setView(id)} disabled={isLocked} title={isLocked ? 'Complete your placement test to unlock' : ''}>
+            <Icon size={18}/>
+            <span>{label}</span>
+            {isLocked && <i className="lock-icon">🔒</i>}
+            {id === 'placement' && !isLocked && <i style={{ background: '#7057e8' }}>Test</i>}
+            {id === 'vocabulary' && !isLocked && <i>3</i>}
+          </button>
+        );
+      })}
     </nav>
     <div className="sidebar-bottom">
       <div className="streak">
@@ -303,7 +371,7 @@ function InsightList({ title, items, tone }) {
    PLACEMENT TEST MODULE (4 UX Phases)
    ========================================================================== */
 
-function PlacementTest({ setView, notify, user, onLevelUpdated }) {
+function PlacementTest({ setView, notify, user, onLevelUpdated, onPlacementCompleted, isOnboarding }) {
   const [phase, setPhase] = useState('welcome'); // 'welcome' | 'countdown' | 'test' | 'results'
   const [countdownStep, setCountdownStep] = useState(3);
   const [sessionId, setSessionId] = useState(null);
@@ -349,7 +417,19 @@ function PlacementTest({ setView, notify, user, onLevelUpdated }) {
   const startPlacementFlow = async () => {
     setLoading(true);
     try {
-      const data = await api('/api/placement/start', { method: 'POST' });
+      const levelMapping = {
+        'A1': 'beginner', 'A2': 'beginner',
+        'B1': 'daily',
+        'B2': 'confident',
+        'C1': 'fluent', 'C2': 'fluent'
+      };
+      
+      const estimated_level = user?.level ? levelMapping[user.level] || 'confident' : 'confident';
+      
+      const data = await api('/api/placement/start', { 
+        method: 'POST',
+        body: { estimated_level }
+      });
       setSessionId(data.session_id);
       setCurrentQuestion(data.currentQuestion);
       setAnsweredCategories([]);
@@ -403,7 +483,9 @@ function PlacementTest({ setView, notify, user, onLevelUpdated }) {
       if (response.completed) {
         setResults(response.results);
         setPhase('results');
-        if (onLevelUpdated && response.results.finalLevel) {
+        if (onPlacementCompleted && response.results.finalLevel) {
+          onPlacementCompleted(response.results.finalLevel);
+        } else if (onLevelUpdated && response.results.finalLevel) {
           onLevelUpdated(response.results.finalLevel);
         }
         notify(`🎉 Assessment complete! Your level: ${response.results.finalLevel}`);
@@ -432,9 +514,9 @@ function PlacementTest({ setView, notify, user, onLevelUpdated }) {
     {phase === 'welcome' && (
       <div className="placement-welcome-card">
         <div className="placement-welcome-header">
-          <span className="eyebrow">ADAPTIVE CPV PLACEMENT TEST</span>
-          <h1>Let's find your English level 🎯</h1>
-          <p>30 questions. 3 skills. 100% you.</p>
+          <span className="eyebrow">{isOnboarding ? 'WELCOME TO LINGUAFY' : 'ADAPTIVE CPV PLACEMENT TEST'}</span>
+          <h1>{isOnboarding ? 'Let\'s find your baseline 🎯' : 'Let\'s find your English level 🎯'}</h1>
+          <p>{isOnboarding ? 'Complete this 30-question diagnostic to unlock your personalized learning workspace.' : '30 questions. 3 skills. 100% you.'}</p>
         </div>
 
         <div className="placement-rules-grid">
@@ -775,10 +857,10 @@ function PlacementTest({ setView, notify, user, onLevelUpdated }) {
 
         {/* Section H: Final CTA */}
         <div className="placement-final-cta-box">
-          <h3>Ready to start your personalized journey?</h3>
+          <h3>{isOnboarding ? 'Workspace unlocked!' : 'Ready to start your personalized journey?'}</h3>
           <p>Your dashboard, drills, and AI coach have now been calibrated to your {results.finalLevel} level.</p>
           <button className="placement-cta-large" onClick={() => setView('overview')}>
-            Let's start learning <ArrowRight size={18}/>
+            {isOnboarding ? 'Enter workspace' : 'Let\'s start learning'} <ArrowRight size={18}/>
           </button>
         </div>
       </div>

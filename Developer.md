@@ -96,7 +96,7 @@ English Trainer/
 │   └── test_placement.mjs            # diagnostic test: simulates 30-Q adaptive placement test
 ├── supabase/
 │   ├── schema.sql                    # DB schema (run in Supabase SQL editor; includes placement tables)
-│   └── seed.sql                      # 3 grammar drills + 3 vocabulary words
+│   └── seed.sql                      # 7 grammar drills + 6 vocabulary words
 ├── src/
 │   ├── main.jsx                      # ENTIRE frontend (components + render, including PlacementTest)
 │   ├── api.js                        # fetch wrapper, token/session helpers
@@ -184,11 +184,14 @@ Is Supabase configured?
 ```
 
 - **Local mode** (`backend/src/services/local.js`): `users` (Map), `writing`,
-  `grammarAttempts`, `vocabulary`, `exams` (arrays), `conversations`
-  (Map session→turns). Ships with 2 grammar drills and 2 vocabulary words so
-  Grammar/Vocabulary work even without seed data. All data is **lost on restart**.
-  Auth tokens are `local-<user-id>`; `requireAuth` accepts anything starting
-  with `local-`.
+  `grammarAttempts`, `vocabulary`, `vocabularyAttempts`, `exams` (arrays),
+  `conversations` (Map session→turns), `placementAttempts` +
+  `placementSessions` (Maps). Ships with 7 grammar drills and 5 vocabulary
+  words (difficulty 1–5, level-filterable) so Grammar/Vocabulary work even
+  without seed data. Also carries `updateUserLevel(id, level)` so the
+  placement test can assign A1–C2 in local mode. All data is **lost on
+  restart**. Auth tokens are `local-<user-id>`; `requireAuth` accepts
+  anything starting with `local-`.
 - **Supabase mode**: real PostgreSQL tables + JWT auth. The service-role key is
   used for DB writes (bypasses RLS) and `publicAuth` for password sign-in.
 - Responses include a `local_mode: true` flag so callers know which backend
@@ -221,18 +224,20 @@ views via `useState`.
 | `App`            | Shell + view/toast state. Shows `<Auth>` until `user` is set.      |
 | `Auth`           | `POST /api/auth/signup` or `/login`; on success persists session.  |
 | `Sidebar`        | Nav + user + streak/upgrade UI (includes Placement Test item).      |
-| `Overview`       | `GET /api/user/progress` + `GET /api/placement/latest` → fills stats, skill bars, and diagnostic level banner. |
+| `Topbar`         | Presentational header (mobile logo, icon buttons, avatar).          |
+| `Overview`       | `GET /api/user/progress` + `GET /api/placement/latest` → fills stats, skill bars, learning-profile insights, and diagnostic level banner. |
 | `PlacementTest`  | `POST /api/placement/start`, `POST /api/placement/submit-answer`, `GET /api/placement/latest`. 4-phase adaptive test flow (Welcome, 3-2-1 Countdown, 30-Q adaptive test with confidence chips, Celebratory diagnostic results with clickable 15-topic Grammar Heatmap modal). |
+| `LearningInsights` | Renders `strengths` / `weak_areas` from progress into the dashboard learning profile. |
 | `Writing`        | `POST /api/feedback/analyze-text` → maps `feedback.errors`/`alternatives` into the feedback panel. |
 | `FeedbackPanel`  | Pure presentational; renders `{ score, note, issues[], alternatives[] }`. |
-| `Grammar`        | `GET /api/drills/grammar` (load), `POST /api/feedback/grammar-drill` (check). Shows running `accuracy_this_pillar`. |
-| `Vocabulary`     | `GET /api/vocabulary/daily`, `POST /api/feedback/vocabulary-check`. Speaker button uses browser `speechSynthesis`. |
+| `GrammarEnhanced`| `GET /api/drills/grammar` (load), `POST /api/feedback/grammar-drill` (check). Topic picker (8 topics incl. All), confidence choice (sure/not sure), sends `time_spent_seconds`; shows credited vs raw accuracy + avg time. |
+| `VocabularyEnhanced` | `GET /api/vocabulary/daily?level=`, `POST /api/feedback/vocabulary-check`. Level picker (basic/intermediate/advanced/hard), timing, mastery via 3 correct uses. Speaker button uses browser `speechSynthesis`. |
 | `Exam`           | Real countdown timer (`setInterval`, starts at 40:00), live word count, `POST /api/exam/submit` → band + per-criterion scores. |
 | `Roleplay`       | `POST /api/conversation/send` with `session_id`; accumulates `grammar_notes`. |
 
-**Dead code worth knowing about:** the `feedback` mock constant at the top of
-`src/main.jsx` (lines 12–23) is no longer referenced by any component — safe to
-delete. The `nav` array drives the sidebar.
+**Dead code worth knowing about:** the old `feedback` mock constant was
+removed; the `Play` icon is still imported from `lucide-react` but never used.
+The `nav` array (lines 14–22) drives the sidebar.
 
 ### 5.3 Styling
 
@@ -275,7 +280,8 @@ POST /api/conversation/send          AI conversation reply
 GET  /api/user/progress              aggregated dashboard stats
 ```
 
-- `notFound` + `errorHandler` catch everything else (JSON errors, `error.status` respected).
+- `notFound` + `errorHandler` catch everything else (JSON errors, `error.status`
+  respected; upstream Groq/Supabase failures are mapped to 502 — see §6.3).
 
 ### 6.2 `config.js`
 
@@ -287,7 +293,11 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 - **`auth.js`** — `requireAuth`: reads `Authorization: Bearer <token>`.
   Local mode: token must start with `local-`, looks up `local.user(id)`.
   Supabase mode: `admin().auth.getUser(token)`. Sets `req.user`; else 401.
-- **`errors.js`** — `notFound` (404 JSON) and `errorHandler` (logs + JSON error).
+- **`errors.js`** — `notFound` (404 JSON) and `errorHandler`. The handler
+  distinguishes errors thrown by *upstream* services (Groq/Supabase — detected
+  via `error.headers` or `error.error`) from app errors: upstream failures map
+  to **502** (hiding the provider's raw status, e.g. Groq's 404 `model_not_found`),
+  anything else keeps `error.status` (400/401/404/503) and the friendly message.
 
 ### 6.4 Services
 
@@ -315,11 +325,11 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 | `auth.js`         | signup / login / me                        | signup validates level A1–C2, creates Supabase auth user + profile row, then signs in to return a JWT. Login returns profile from `users` table. |
 | `placement.js`    | `/start`, `/submit-answer`, `/latest`      | Starts session, delivers sanitized questions (no spoilers), evaluates confidence scoring, generates deep diagnostic report, updates user level. |
 | `writing.js`      | `POST /feedback/analyze-text`              | zod: 8–2000 chars. Score = avg of grammar/tone/vocabulary breakdown. Inserts `writing_submissions`. |
-| `grammar.js`      | `GET /drills/grammar`, `POST /feedback/grammar-drill` | Random drill (optional `?pillar=`); answer checked against `correct_answer`, attempt saved, per-pillar accuracy returned. |
-| `vocabulary.js`   | `GET /vocabulary/daily`, `POST /feedback/vocabulary-check` | Daily word chosen by day-index over all words. Sentence first pre-checked locally for the target word — if absent, returns "you haven't used the word" without calling Groq. Otherwise AI-checked; upserts `vocabulary_progress`; "mastered" after 3 correct uses. |
+| `grammar.js`      | `GET /drills/grammar`, `POST /feedback/grammar-drill` | Random drill (optional `?pillar=`; `all` picks any). Answer checked against `correct_answer`; attempt saved with `confidence` (sure/not sure) + `time_spent_seconds`; returns credited accuracy (honesty-scaled), raw accuracy, awarded points, average time, per-pillar accuracy. |
+| `vocabulary.js`   | `GET /vocabulary/daily?level=`, `POST /feedback/vocabulary-check` | Daily word chosen by day-index over all words, optionally filtered by level (basic/intermediate/advanced/hard). Sentence first pre-checked locally for the target word — if absent, returns "you haven't used the word" without calling Groq. Otherwise AI-checked; `vocabulary_attempts` logged with time; upserts `vocabulary_progress`; "mastered" after 3 correct uses. Returns progress summary (mastered/attempts/correct uses/avg time). |
 | `exam.js`         | `POST /exam/submit`                        | zod: ≥150 chars. Groq band scoring; inserts `exam_attempts`. |
 | `conversation.js` | `POST /conversation/send`                  | Creates session on first turn (or reuses `session_id`), stores all turns but only the last 6 are sent to Groq each turn, stores turn + grammar notes. |
-| `dashboard.js`    | `GET /user/progress`                       | Aggregates writing/grammar/vocab/exam/conversation per user into `this_week` stats + `weak_areas` + `recommendations`. |
+| `dashboard.js`    | `GET /user/progress`                       | Aggregates writing/grammar/vocab/exam/conversation per user into `this_week` stats + grammar `topics`/`vocab_levels` breakdown, `strengths`/`weak_areas`, avg times (writing/conversation/vocab), credited accuracy, and `recommendations`. |
 
 ### 6.6 `audit_work/` — code audit builder
 
@@ -373,7 +383,11 @@ vocabulary_words            (word bank, no user id)
 
 vocabulary_progress
 ├── user_id, word_id (unique pair)
-├── user_sentence, correct, score (1–10), attempts, mastered, last_attempt, next_review
+├── user_sentence, correct, score (1–10), attempts, mastered, last_attempt, next_review, correct_uses
+
+vocabulary_attempts
+├── user_id, word_id, level (basic/intermediate/advanced/hard)
+├── user_sentence, is_correct, time_spent_seconds, attempted_at
 
 exam_attempts
 ├── user_id → users, exam_type, task_type, essay_text, word_count
@@ -386,9 +400,10 @@ conversation_turns
 ├── session_id → conversation_sessions, user_message, bot_response, grammar_notes (jsonb), turn_number
 ```
 
-- Seed data is in `supabase/seed.sql`: **3 grammar drills** (subject-verb
-  agreement, subjunctive, inversion) and **3 vocabulary words** (meticulous,
-  ephemeral, articulate).
+- Seed data is in `supabase/seed.sql`: **7 grammar drills** (subject-verb
+  agreement, subjunctive, inversion, tenses, prepositions, articles,
+  conditionals) and **6 vocabulary words** (meticulous, ephemeral, articulate,
+  happy, reliable, ubiquitous).
 - **RLS is enabled on all tables** — the backend uses the service-role key which
   bypasses RLS, so that key must never reach the browser.
 - Key `user_id` columns are indexed (`idx_writing_user`, `idx_grammar_user`, …).
@@ -415,13 +430,16 @@ Writing "Get feedback":
 - Frontend still a single file; no URL routing (refresh lands on Overview).
 - No automated tests, linter, or CI.
 - Sidebar streak ("12 day streak"), "Upgrade plan", and the Vocabulary "3" badge
-  are static (not driven by real data). The Overview recommendation banner and
-  activity chart heights are static too.
-- `language_level` never adapts content; roleplay scenario is fixed to
+  are static (not driven by real data). The Overview "Recommended for you"
+  banner and activity chart heights are static too — though the top placement
+  banner IS live (level + report from `GET /api/placement/latest`).
+- The Placement Test now **calibrates and assigns** `language_level` (A1–C2),
+  but no content adapts to it yet; roleplay scenario is fixed to
   job interview; exam prompt is a single fixed question.
 - Groq calls are synchronous within a request (no streaming); a Groq outage or
   invalid JSON yields 502/503 to the UI.
-- The old `feedback` mock constant in `src/main.jsx` is dead code.
+- The old `feedback` mock constant in `src/main.jsx` is gone; a leftover unused
+  `Play` icon import remains.
 - The `dist/` build currently on disk is **stale** — it baked in
   `http://localhost:4000` as the API URL. Always `npm run build` before
   deploying (the live Vercel frontend uses its own `VITE_API_URL` env var).
@@ -469,7 +487,7 @@ src/
 
 | What do you need?                     | Where to look |
 |---------------------------------------|---------------|
-| Add or change a frontend module       | `src/main.jsx` — `nav` array (lines 25–28) + `App` render block (lines 41–46) |
+| Add or change a frontend module       | `src/main.jsx` — `nav` array (lines 14–22) + `App` render block (lines 44–52) |
 | Change an API route                   | `backend/src/routes/*.js`; mount in `backend/src/index.js` |
 | Change an AI prompt                   | `backend/src/services/groq.js` |
 | Change theming                        | `src/styles.css` — `:root` tokens (line 3) |

@@ -6,7 +6,8 @@ import { isSupabaseConfigured } from '../config.js';
 import { local } from '../services/local.js';
 
 const router = Router();
-const signupSchema = z.object({ email: z.string().email(), password: z.string().min(8).max(72), name: z.string().trim().min(1).max(100), languageLevel: z.enum(['A1','A2','B1','B2','C1','C2']).default('B2') });
+const ESTIMATED_LEVEL_MAP = { beginner: 'A1', daily: 'B1', confident: 'B2', fluent: 'C1' };
+const signupSchema = z.object({ email: z.string().email(), password: z.string().min(8).max(72), name: z.string().trim().min(1).max(100), estimatedLevel: z.enum(['beginner', 'daily', 'confident', 'fluent']).optional(), languageLevel: z.enum(['A1','A2','B1','B2','C1','C2']).optional() }).transform(data => ({ ...data, languageLevel: data.languageLevel || ESTIMATED_LEVEL_MAP[data.estimatedLevel] || 'B2' }));
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const valid = (schema, body) => { const r = schema.safeParse(body); if (!r.success) throw Object.assign(new Error(r.error.issues[0].message), { status: 400 }); return r.data; };
 

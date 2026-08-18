@@ -10,7 +10,8 @@ import {
   selectNextQuestion,
   sanitizeQuestionForClient,
   evaluateAnswer,
-  calculateFinalResults
+  calculateFinalResults,
+  seedAbilityScore
 } from '../services/placement.js';
 
 const router = express.Router();
@@ -28,6 +29,7 @@ const submitAnswerSchema = z.object({
 // POST /api/placement/start
 router.post('/start', requireAuth, (req, res, next) => {
   try {
+    const estimatedLevel = req.body?.estimated_level || null;
     const bank = getQuestionBank();
     if (!bank || !bank.length) {
       return res.status(503).json({ error: 'Placement question bank is not available' });
@@ -38,7 +40,7 @@ router.post('/start', requireAuth, (req, res, next) => {
       sessionId,
       userId: req.user.id,
       startedAt: new Date().toISOString(),
-      abilityScore: 0,
+      abilityScore: seedAbilityScore(estimatedLevel),
       usedIds: new Set(),
       categoryHistory: [],
       grammarTopicCounts: {},

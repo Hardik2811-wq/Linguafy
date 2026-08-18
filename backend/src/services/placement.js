@@ -91,6 +91,11 @@ export function selectDifficultyBand(abilityScore) {
   return Math.max(0.05, Math.min(0.95, 0.5 + (abilityScore || 0) / 100));
 }
 
+export function seedAbilityScore(estimatedLevel) {
+  const seeds = { beginner: -20, daily: -5, confident: 0, fluent: 15 };
+  return seeds[estimatedLevel] ?? 0;
+}
+
 export function sanitizeQuestionForClient(question, questionNumber = 1, totalQuestions = 30) {
   if (!question) return null;
   return {
