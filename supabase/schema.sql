@@ -59,5 +59,54 @@ alter table public.vocabulary_progress add column if not exists correct_uses int
 update public.grammar_attempts set awarded_points = 1 where correct = true and confidence = 'sure' and awarded_points = 0;
 update public.vocabulary_progress set correct_uses = attempts where correct = true and correct_uses = 0;
 
+create table if not exists public.placement_questions (
+  id uuid primary key default uuid_generate_v4(),
+  external_id text unique not null,
+  category text not null check (category in ('C', 'P', 'V')),
+  grammar_topic text not null,
+  vocab_tier text,
+  estimated_difficulty float not null,
+  cefr_reference text,
+  question text not null,
+  passage text,
+  options jsonb not null,
+  explanation text not null,
+  expected_time_seconds int not null default 25,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.placement_attempts (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  ability_score float default 0,
+  final_level text,
+  cpv_scores jsonb,
+  grammar_heatmap jsonb,
+  vocab_tier_reached text,
+  category_counts jsonb,
+  is_completed boolean default false
+);
+
+create table if not exists public.placement_responses (
+  id uuid primary key default uuid_generate_v4(),
+  attempt_id uuid not null references public.placement_attempts(id) on delete cascade,
+  question_id uuid not null references public.placement_questions(id),
+  user_answer text not null,
+  is_correct boolean not null,
+  confidence varchar(20) not null check (confidence in ('certain', 'fairly_sure', 'not_sure')),
+  time_taken_seconds int not null default 0,
+  pace_signal text,
+  score_movement int,
+  ability_score_after float,
+  answered_at timestamptz not null default now()
+);
+
+create index if not exists idx_placement_user on public.placement_attempts(user_id);
+create index if not exists idx_placement_resp_attempt on public.placement_responses(attempt_id);
+
 alter table public.users enable row level security; alter table public.writing_submissions enable row level security; alter table public.grammar_attempts enable row level security; alter table public.vocabulary_progress enable row level security; alter table public.vocabulary_attempts enable row level security; alter table public.exam_attempts enable row level security; alter table public.conversation_sessions enable row level security; alter table public.conversation_turns enable row level security;
+alter table public.placement_questions enable row level security; alter table public.placement_attempts enable row level security; alter table public.placement_responses enable row level security;
 -- The API uses the service-role key; it bypasses RLS. Do not expose that key to the browser.
+

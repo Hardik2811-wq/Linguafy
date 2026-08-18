@@ -1,0 +1,1013 @@
+/* Linguafy Adaptive Placement Test Styles */
+
+/* ==========================================================================
+   1. Phase 1: Welcome & Rules Screen
+   ========================================================================== */
+
+.placement-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 30px 60px;
+}
+
+.placement-welcome-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 42px 48px;
+  box-shadow: 0 10px 30px rgba(31, 37, 64, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.placement-welcome-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 36px;
+}
+
+.placement-welcome-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px;
+  color: var(--ink);
+  letter-spacing: -1.2px;
+  margin: 10px 0 12px;
+}
+
+.placement-welcome-header p {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.placement-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.placement-rule-card {
+  background: #fbfbfe;
+  border: 1px solid #eeeff8;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.placement-rule-card:hover {
+  transform: translateY(-2px);
+  border-color: #dcd7fb;
+  background: #faf8ff;
+}
+
+.placement-rule-icon {
+  font-size: 24px;
+  line-height: 1;
+  min-width: 32px;
+}
+
+.placement-rule-card strong {
+  display: block;
+  font-size: 13px;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.placement-rule-card span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.placement-welcome-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.placement-cta-large {
+  padding: 16px 38px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  background: var(--violet);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(112, 87, 232, 0.32);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.placement-cta-large:hover {
+  background: var(--violet-dark);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(112, 87, 232, 0.4);
+}
+
+.placement-cta-large:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.placement-explain-toggle {
+  background: none;
+  border: none;
+  color: #7b8098;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.placement-explain-toggle:hover {
+  color: var(--violet-dark);
+}
+
+.placement-explain-box {
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: #f6f5fd;
+  border-radius: 10px;
+  border-left: 4px solid var(--violet);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #494e6b;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.placement-explain-box h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   2. Phase 2: 3-2-1 Countdown Screen
+   ========================================================================== */
+
+.placement-countdown-screen {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 60px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 108px;
+  font-weight: 700;
+  color: var(--violet);
+  line-height: 1;
+  margin-bottom: 20px;
+  animation: countdownPop 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+}
+
+.countdown-subtext {
+  font-size: 22px;
+  color: #555b77;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+  min-height: 32px;
+}
+
+@keyframes countdownPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  45% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.95; }
+}
+
+/* ==========================================================================
+   3. Phase 3: Live Test Screen
+   ========================================================================== */
+
+.placement-test-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.placement-topbar-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.placement-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.placement-qcount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.placement-streak-badge {
+  background: #fff5e6;
+  color: #d97706;
+  border: 1px solid #fde68a;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  animation: fadeIn 0.2s ease;
+}
+
+.placement-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.placement-timer.timer-warning {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+.placement-timer.timer-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  animation: timerPulse 1s infinite alternate;
+}
+
+@keyframes timerPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); box-shadow: 0 0 10px rgba(220, 38, 38, 0.2); }
+}
+
+/* 30-Segment Progress Bar */
+.placement-progress-bar {
+  display: grid;
+  grid-template-columns: repeat(30, 1fr);
+  gap: 4px;
+  height: 8px;
+  background: #f1f2f7;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.placement-segment {
+  border-radius: 3px;
+  background: #e2e4ed;
+  transition: background 0.3s ease, transform 0.2s;
+}
+
+.placement-segment.current {
+  background: #7057e8;
+  animation: segmentPulse 1.2s infinite;
+}
+
+.placement-segment.cat-C {
+  background: #3b82f6; /* Blue for Conversation */
+}
+
+.placement-segment.cat-P {
+  background: #10b981; /* Green for Passage */
+}
+
+.placement-segment.cat-V {
+  background: #8b5cf6; /* Purple for Vocabulary */
+}
+
+@keyframes segmentPulse {
+  0%, 100% { opacity: 0.7; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.4); }
+}
+
+/* Question Area */
+.placement-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 34px 38px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  position: relative;
+}
+
+.placement-cat-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.placement-cat-indicator.cat-C {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.placement-cat-indicator.cat-P {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.placement-cat-indicator.cat-V {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+/* Passage Container for Category P */
+.placement-passage-box {
+  background: #fcfbfa;
+  border: 1px solid #ebdccb;
+  border-left: 4px solid #d97706;
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #3e3831;
+}
+
+.placement-passage-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #b45309;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.placement-question-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.5;
+  margin: 0 0 26px;
+}
+
+/* Options */
+.placement-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.placement-option-btn {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.15s ease;
+}
+
+.placement-option-btn:hover:not(:disabled) {
+  border-color: #c4bbf6;
+  background: #faf9fe;
+  transform: translateX(3px);
+}
+
+.placement-option-btn.selected {
+  border-color: var(--violet);
+  background: #f5f2ff;
+  color: var(--violet-dark);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(112, 87, 232, 0.2);
+}
+
+.placement-option-key {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f3f4f8;
+  color: #6b7280;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.placement-option-btn.selected .placement-option-key {
+  background: var(--violet);
+  color: #fff;
+}
+
+/* Confidence Prompt */
+.placement-confidence-bar {
+  background: #f9fafc;
+  border: 1px dashed #d8dae5;
+  border-radius: 12px;
+  padding: 18px 22px;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.placement-confidence-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+.placement-chips-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.placement-conf-chip {
+  flex: 1;
+  min-width: 130px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.placement-conf-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.placement-conf-chip.chip-certain:hover {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.placement-conf-chip.chip-fairly:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.placement-conf-chip.chip-notsure:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   4. Phase 4: Celebratory Results & Diagnostic Screen
+   ========================================================================== */
+
+.placement-results-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* Section A: Headline Reveal */
+.placement-reveal-card {
+  background: linear-gradient(135deg, #f7f5ff 0%, #ece8ff 100%);
+  border: 1px solid #ded5ff;
+  border-radius: 20px;
+  padding: 42px 36px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 35px rgba(112, 87, 232, 0.08);
+}
+
+.placement-level-badge-large {
+  display: inline-block;
+  background: var(--violet);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  padding: 10px 28px;
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(112, 87, 232, 0.35);
+  margin-bottom: 16px;
+  animation: levelPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes levelPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.placement-reveal-card h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+.placement-reveal-card p {
+  color: #5d637d;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* Section B: CPV Breakdown */
+.placement-cpv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.placement-cpv-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.placement-cpv-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.placement-cpv-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.placement-cpv-score {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--violet);
+}
+
+.placement-cpv-meter {
+  height: 8px;
+  background: #f0f1f7;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.placement-cpv-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 10px;
+}
+
+.placement-cpv-meter i.meter-C { background: #3b82f6; }
+.placement-cpv-meter i.meter-P { background: #10b981; }
+.placement-cpv-meter i.meter-V { background: #8b5cf6; }
+
+.placement-cpv-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+/* Section C: Champion & Growth Zones */
+.placement-zones-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.placement-zone-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.placement-zone-card.champ-card {
+  border-top: 4px solid #10b981;
+}
+
+.placement-zone-card.growth-card {
+  border-top: 4px solid #f59e0b;
+}
+
+.placement-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.placement-zone-header h3 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.placement-zone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.placement-zone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #fcfcfe;
+  border: 1px solid #f0f1f7;
+  border-radius: 8px;
+}
+
+.placement-zone-item span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.placement-zone-item b {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+.champ-card .placement-zone-item b {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.growth-card .placement-zone-item b {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+/* Section D: Full Grammar Heatmap */
+.placement-heatmap-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.placement-heatmap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.placement-heatmap-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.placement-heatmap-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.placement-heatmap-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.heat-dot-strong { background: #10b981; }
+.heat-dot-average { background: #f59e0b; }
+.heat-dot-weak { background: #ef4444; }
+.heat-dot-nodata { background: #cbd5e1; }
+
+.placement-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.heatmap-tile {
+  background: #fcfcfd;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.heatmap-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.heatmap-tile.tile-strong {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.heatmap-tile.tile-average {
+  border-color: #fde68a;
+  background: #fffdf2;
+}
+
+.heatmap-tile.tile-weak {
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.heatmap-tile.tile-insufficient_data {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.heatmap-tile-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.heatmap-tile-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.heatmap-tile-meta b {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tile-strong .heatmap-tile-meta b { color: #047857; }
+.tile-average .heatmap-tile-meta b { color: #b45309; }
+.tile-weak .heatmap-tile-meta b { color: #b91c1c; }
+
+/* Drilldown modal / drawer for clicked heatmap tile */
+.heatmap-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.heatmap-modal-box {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.25s ease;
+}
+
+.heatmap-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.heatmap-modal-head h3 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.heatmap-q-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+  background: #fbfbfe;
+}
+
+.heatmap-q-item.q-correct {
+  border-left: 4px solid #10b981;
+}
+
+.heatmap-q-item.q-wrong {
+  border-left: 4px solid #ef4444;
+}
+
+.heatmap-q-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.heatmap-q-ans {
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.heatmap-q-expl {
+  font-size: 11px;
+  color: #4b5563;
+  background: #f3f4f9;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Section E: Pace & Time Insights */
+.placement-pace-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.placement-pace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.placement-pace-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f9f9fc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.placement-pace-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Section G: Recommended Courses / Path */
+.placement-recs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.placement-rec-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.placement-rec-card:hover {
+  transform: translateY(-2px);
+  border-color: #cdc5f8;
+}
+
+.placement-rec-category {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.placement-rec-card h4 {
+  font-size: 15px;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.placement-rec-card p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.placement-rec-card button {
+  margin-top: auto;
+}
+
+/* Section H: Final CTA */
+.placement-final-cta-box {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(31, 37, 64, 0.04);
+}
+
+.placement-final-cta-box h3 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.placement-final-cta-box p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 800px) {
+  .placement-cpv-grid,
+  .placement-zones-grid {
+    grid-template-columns: 1fr;
+  }
+  .placement-welcome-card {
+    padding: 28px 20px;
+  }
+  .placement-welcome-header h1 {
+    font-size: 28px;
+  }
+  .placement-card {
+    padding: 24px 20px;
+  }
+}
