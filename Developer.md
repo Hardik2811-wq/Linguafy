@@ -56,7 +56,7 @@ running without a database).
 | API client   | `src/api.js` (fetch wrapper, `VITE_API_URL`)                  |
 | Backend      | Node.js + Express (ESM) in `backend/`                         |
 | Validation   | `zod`                                                         |
-| AI           | `groq-sdk` (JSON mode, `llama-3.3-70b-versatile`)             |
+| AI           | `groq-sdk` (JSON mode, `openai/gpt-oss-120b`)                |
 | Database     | PostgreSQL via `@supabase/supabase-js` (optional)             |
 | Auth         | Supabase Auth (JWT) in prod; in-memory tokens in local mode   |
 | Hosting      | Vercel — frontend + backend as two separate projects          |
@@ -151,8 +151,8 @@ so `.env.local` always wins. This lets non-secret defaults live in `.env`
 | `PORT`                   | `backend/.env`   | API port                                            | `4000`                         |
 | `FRONTEND_ORIGIN`        | `backend/.env`   | Comma-separated allowed CORS origins (e.g. the Vercel frontend URL) | `http://localhost:5173` |
 | `ALLOW_ALL_ORIGINS`      | `backend/.env`   | `"true"` bypasses CORS allow-list (dev/testing only) | unset                          |
-| `GROQ_MODEL`             | `backend/.env`   | Groq model used for all AI calls                    | `llama-3.3-70b-versatile`      |
-| `GROQ_FAST_MODEL`        | `backend/.env`   | Cheaper/faster model for simple AI tasks (vocab check); falls back to `GROQ_MODEL` | `GROQ_MODEL` |
+| `GROQ_MODEL`             | `backend/.env`   | Groq model used for all AI calls                    | `openai/gpt-oss-120b`          |
+| `GROQ_FAST_MODEL`        | `backend/.env`   | Cheaper/faster model for simple AI tasks (vocab check); falls back to `GROQ_MODEL` | `groq/compound-mini` |
 | `GROQ_API_KEY`           | `backend/.env.local` | Groq API key (required for AI feedback)          | —                              |
 | `SUPABASE_URL`           | `backend/.env.local` | Supabase project URL                             | —                              |
 | `SUPABASE_ANON_KEY`      | `backend/.env.local` | Public anon key (login only)                     | —                              |

@@ -15,8 +15,8 @@ export const config = {
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   groqApiKey: process.env.GROQ_API_KEY,
-  groqModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-  groqFastModel: process.env.GROQ_FAST_MODEL || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+  groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+  groqFastModel: process.env.GROQ_FAST_MODEL || process.env.GROQ_MODEL || 'groq/compound-mini'
 };
 
 export function requireConfig(...keys) {
