@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 export const local = {
   users: new Map(), writing: [], grammarAttempts: [], vocabulary: [], vocabularyAttempts: [], exams: [], conversations: new Map(),
+  placementAttempts: new Map(), placementSessions: new Map(),
   drills: [
     { id: 1, pillar: 'subject_verb_agreement', question: 'Neither the manager nor the employees ___ available for comment.', options: { A: 'is', B: 'are' }, correct: 'B', difficulty: 2, explanation: 'With neither nor, the verb agrees with the closest subject. Employees is plural, so use are.' },
     { id: 2, pillar: 'subjunctive', question: 'The director suggested that every applicant ___ the form before Friday.', options: { A: 'submits', B: 'submit' }, correct: 'B', difficulty: 3, explanation: 'After suggest that, formal English uses the base verb form: submit.' },
@@ -19,6 +20,12 @@ export const local = {
     { word_id: 5, word: 'ubiquitous', definition: 'Present, appearing, or found everywhere.', context_examples: ['Smartphones are ubiquitous in modern cities.'], difficulty: 5, category: 'advanced' }
   ],
   user(id = 'local-user') { return this.users.get(id) || { id, email: 'local@linguafy.app', name: 'Learner', level: 'B2' }; },
+  updateUserLevel(id, level) {
+    const u = this.user(id);
+    u.level = level;
+    this.users.set(id, u);
+    return u;
+  },
   createUser(input) { const user = { id: randomUUID(), email: input.email, name: input.name || 'Learner', level: input.languageLevel || 'B2', password: input.password }; this.users.set(user.id, user); return user; },
   findUser(email) { return [...this.users.values()].find((user) => user.email === email); },
   session(user) { return `local-${user.id}`; }

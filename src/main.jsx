@@ -1,31 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  ArrowRight, BookOpen, Bot, Check, ChevronDown, Clock3, Flame, GraduationCap,
-  LayoutDashboard, MessageCircle, MoreHorizontal, PenLine, Play, RotateCcw,
-  Send, Sparkles, Star, Target, Trophy, UserRound, Volume2, X
+  ArrowRight, BookOpen, Bot, Check, ChevronDown, ChevronRight, Clock3, Flame, GraduationCap,
+  HelpCircle, LayoutDashboard, MessageCircle, MoreHorizontal, PenLine, Play, RotateCcw,
+  Send, Sparkles, Star, Target, Trophy, UserRound, Volume2, X, Zap
 } from 'lucide-react';
 import './styles.css';
 import './auth.css';
 import './insights.css';
+import './placement.css';
 import { api, clearSession, getStoredUser, setSession } from './api.js';
 
-const feedback = {
-  score: 82,
-  corrected: 'I have been working on this report since Monday, and I am confident that it will meet the client\'s expectations.',
-  note: 'Clear and professional overall. A few small changes make the timeline and tone more precise.',
-  issues: [
-    { wrong: 'I am working', right: 'I have been working', label: 'Present perfect continuous', text: 'Use this tense for an action that began in the past and is still continuing.' },
-    { wrong: 'from Monday', right: 'since Monday', label: 'Preposition', text: 'Use “since” with a starting point in time.' },
-    { wrong: 'meet client expectations', right: "meet the client's expectations", label: 'Article & possessive', text: 'Add the article and a possessive form for natural business English.' }
-  ],
-  suggestions: ['Replace “good” with “well-researched” to sound more specific.', 'Consider ending with a next step or deadline.', 'Your tone is appropriate for a professional update.'],
-  alternatives: ['confident', 'assured', 'optimistic']
-};
-
 const nav = [
-  ['overview', 'Overview', LayoutDashboard], ['writing', 'Writing studio', PenLine], ['grammar', 'Grammar lab', BookOpen],
-  ['vocabulary', 'Vocabulary', Sparkles], ['exam', 'Exam prep', GraduationCap], ['roleplay', 'Roleplay', MessageCircle]
+  ['overview', 'Overview', LayoutDashboard],
+  ['placement', 'Placement test', Target],
+  ['writing', 'Writing studio', PenLine],
+  ['grammar', 'Grammar lab', BookOpen],
+  ['vocabulary', 'Vocabulary', Sparkles],
+  ['exam', 'Exam prep', GraduationCap],
+  ['roleplay', 'Roleplay', MessageCircle]
 ];
 
 function App() {
@@ -34,12 +27,23 @@ function App() {
   const [user, setUser] = useState(getStoredUser());
   const notify = (message) => { setToast(message); setTimeout(() => setToast(''), 2600); };
 
+  const handleLevelUpdated = (newLevel) => {
+    const updated = { ...user, level: newLevel };
+    setUser(updated);
+    const stored = getStoredUser();
+    if (stored) {
+      stored.level = newLevel;
+      localStorage.setItem('linguafy_user', JSON.stringify(stored));
+    }
+  };
+
   return <div className="shell">
     <Sidebar view={view} setView={setView} user={user} onSignOut={() => { clearSession(); setUser(null); notify('You have been signed out'); }} />
     <main className="main">
       <Topbar user={user} />
       {!user ? <Auth onAuthenticated={(session) => { setSession(session); setUser(session.user); notify(`Welcome, ${session.user.name}`); }} /> : <>
         {view === 'overview' && <Overview setView={setView} user={user} />}
+        {view === 'placement' && <PlacementTest setView={setView} notify={notify} user={user} onLevelUpdated={handleLevelUpdated} />}
         {view === 'writing' && <Writing notify={notify} />}
         {view === 'grammar' && <GrammarEnhanced notify={notify} />}
         {view === 'vocabulary' && <VocabularyEnhanced notify={notify} />}
@@ -52,74 +56,1317 @@ function App() {
 }
 
 function Auth({ onAuthenticated }) {
-  const [mode, setMode] = useState('login'); const [form, setForm] = useState({ name: '', email: '', password: '', languageLevel: 'B2' }); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
-  const submit = async (event) => { event.preventDefault(); setLoading(true); setError(''); try { const session = await api(`/api/auth/${mode}`, { method: 'POST', body: mode === 'signup' ? form : { email: form.email, password: form.password } }); onAuthenticated(session); } catch (err) { setError(err.message); } finally { setLoading(false); } };
-  return <section className="auth-page"><div className="auth-card"><span className="brand-mark"><Sparkles size={19}/></span><span className="eyebrow">YOUR LEARNING SPACE</span><h1>{mode === 'login' ? 'Welcome back.' : 'Start learning with clarity.'}</h1><p>{mode === 'login' ? 'Sign in to access your saved practice and progress.' : 'Create your free account to save feedback and track your improvement.'}</p><form onSubmit={submit}>{mode === 'signup' && <label>Name<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your name"/></label>}<label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com"/></label><label>Password<input required type="password" minLength="8" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters"/></label>{mode === 'signup' && <label>Current level<select value={form.languageLevel} onChange={e => setForm({ ...form, languageLevel: e.target.value })}>{['A1','A2','B1','B2','C1','C2'].map(level => <option key={level}>{level}</option>)}</select></label>}{error && <p className="form-error">{error}</p>}<button className="primary auth-submit" disabled={loading}>{loading ? <><span className="loader"/> Please wait</> : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={16}/></button></form><button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>{mode === 'login' ? 'New to Linguafy? Create an account' : 'Already have an account? Sign in'}</button></div></section>;
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ name: '', email: '', password: '', languageLevel: 'B2' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const session = await api(`/api/auth/${mode}`, {
+        method: 'POST',
+        body: mode === 'signup' ? form : { email: form.email, password: form.password }
+      });
+      onAuthenticated(session);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <section className="auth-page">
+    <div className="auth-card">
+      <span className="brand-mark"><Sparkles size={19}/></span>
+      <span className="eyebrow">YOUR LEARNING SPACE</span>
+      <h1>{mode === 'login' ? 'Welcome back.' : 'Start learning with clarity.'}</h1>
+      <p>{mode === 'login' ? 'Sign in to access your saved practice and progress.' : 'Create your free account to save feedback and track your improvement.'}</p>
+      <form onSubmit={submit}>
+        {mode === 'signup' && <label>Name<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your name"/></label>}
+        <label>Email<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com"/></label>
+        <label>Password<input required type="password" minLength="8" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters"/></label>
+        {mode === 'signup' && <label>Current level<select value={form.languageLevel} onChange={e => setForm({ ...form, languageLevel: e.target.value })}>{['A1','A2','B1','B2','C1','C2'].map(level => <option key={level}>{level}</option>)}</select></label>}
+        {error && <p className="form-error">{error}</p>}
+        <button className="primary auth-submit" disabled={loading}>
+          {loading ? <><span className="loader"/> Please wait</> : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={16}/>
+        </button>
+      </form>
+      <button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>
+        {mode === 'login' ? 'New to Linguafy? Create an account' : 'Already have an account? Sign in'}
+      </button>
+    </div>
+  </section>;
 }
 
 function Sidebar({ view, setView, user, onSignOut }) {
   return <aside className="sidebar">
     <div className="brand"><span className="brand-mark"><Sparkles size={19}/></span><span>Linguafy</span></div>
-    <div className="workspace"><div className="avatar mini">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div><div><b>{user ? `${user.name}'s space` : 'Linguafy'}</b><small>{user?.level || 'Sign in to learn'}</small></div><ChevronDown size={16}/></div>
-    <nav>{nav.map(([id, label, Icon]) => <button key={id} className={view === id ? 'nav-link active' : 'nav-link'} onClick={() => setView(id)}><Icon size={18}/><span>{label}</span>{id === 'vocabulary' && <i>3</i>}</button>)}</nav>
-    <div className="sidebar-bottom"><div className="streak"><Flame size={19}/><div><b>12 day streak</b><small>Keep the momentum going</small></div></div><button className="upgrade"><Star size={15} fill="currentColor"/> Upgrade plan</button><div className="profile"><div className="avatar">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div><div><b>{user?.name || 'Guest'}</b><small>{user ? 'Free plan · Sign out' : 'Sign in required'}</small></div>{user && <button className="profile-signout" title="Sign out" onClick={onSignOut}><X size={15}/></button>}</div></div>
+    <div className="workspace">
+      <div className="avatar mini">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div>
+      <div><b>{user ? `${user.name}'s space` : 'Linguafy'}</b><small>{user?.level || 'Sign in to learn'}</small></div>
+      <ChevronDown size={16}/>
+    </div>
+    <nav>
+      {nav.map(([id, label, Icon]) => (
+        <button key={id} className={view === id ? 'nav-link active' : 'nav-link'} onClick={() => setView(id)}>
+          <Icon size={18}/>
+          <span>{label}</span>
+          {id === 'placement' && <i style={{ background: '#7057e8' }}>Test</i>}
+          {id === 'vocabulary' && <i>3</i>}
+        </button>
+      ))}
+    </nav>
+    <div className="sidebar-bottom">
+      <div className="streak">
+        <Flame size={19}/>
+        <div><b>12 day streak</b><small>Keep the momentum going</small></div>
+      </div>
+      <button className="upgrade"><Star size={15} fill="currentColor"/> Upgrade plan</button>
+      <div className="profile">
+        <div className="avatar">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div>
+        <div><b>{user?.name || 'Guest'}</b><small>{user ? 'Free plan · Sign out' : 'Sign in required'}</small></div>
+        {user && <button className="profile-signout" title="Sign out" onClick={onSignOut}><X size={15}/></button>}
+      </div>
+    </div>
   </aside>;
 }
 
-function Topbar({ user }) { return <header className="topbar"><div className="mobile-logo"><Sparkles size={17}/> Linguafy</div><div className="top-actions"><button className="icon-button"><Volume2 size={19}/></button><button className="help">?</button><div className="avatar">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div></div></header>; }
+function Topbar({ user }) {
+  return <header className="topbar">
+    <div className="mobile-logo"><Sparkles size={17}/> Linguafy</div>
+    <div className="top-actions">
+      <button className="icon-button"><Volume2 size={19}/></button>
+      <button className="help">?</button>
+      <div className="avatar">{user?.name?.slice(0,2).toUpperCase() || 'LF'}</div>
+    </div>
+  </header>;
+}
 
 function Overview({ setView, user }) {
-  const [progress, setProgress] = useState(null); useEffect(() => { api('/api/user/progress').then(setProgress).catch(() => {}); }, []); const week = progress?.this_week;
-  return <section className="page overview"><div className="welcome"><div><p className="eyebrow">YOUR LEARNING DASHBOARD</p><h1>Good morning, {user?.name || 'Learner'} <span>👋</span></h1><p>You've made great progress this week. Ready for a focused session?</p></div><button className="primary" onClick={() => setView('writing')}>Continue learning <ArrowRight size={17}/></button></div>
-    <section className="hero-card"><div className="hero-copy"><span className="pill"><Sparkles size={14}/> TODAY'S FOCUS</span><h2>Write with more<br/>confidence.</h2><p>Practice a short professional message and get clarity-focused feedback from your AI coach.</p><button className="light-button" onClick={() => setView('writing')}>Start writing practice <ArrowRight size={16}/></button></div><div className="hero-visual"><div className="paper"><div className="paper-bar"></div><div className="line w90"></div><div className="line w70"></div><div className="highlight-line"><span></span></div><div className="line w80"></div><div className="comment-bubble"><Sparkles size={14}/><b>Nice phrasing!</b></div></div></div></section>
-    <div className="section-heading"><div><h2>Your learning pulse</h2><p>A quick look at your last 7 days</p></div><button className="text-button">View report <ArrowRight size={15}/></button></div>
-    <div className="stats-grid"><Metric icon={<Flame/>} tint="orange" value={week?.writing_submissions || 0} label="Writing sessions" trend="Saved to your progress"/><Metric icon={<Clock3/>} tint="purple" value={week?.grammar_drills || 0} label="Grammar drills" trend="This week"/><Metric icon={<Target/>} tint="green" value={`${week?.grammar_accuracy || 0}%`} label="Grammar accuracy" trend="From saved attempts"/><Metric icon={<Trophy/>} tint="yellow" value={week?.vocab_learned || 0} label="Words mastered" trend="Three correct uses each"/></div>
-    <div className="dashboard-grid"><section className="card progress-card"><div className="card-title"><div><h3>Skill progress</h3><p>Based on your saved activity</p></div><button className="round-more"><MoreHorizontal size={18}/></button></div><Skill name="Writing" value={week?.writing_avg_score || 0} color="violet" note="Average score"/><Skill name="Grammar" value={week?.grammar_accuracy || 0} color="blue" note={`Credited accuracy · ${week?.grammar_average_time_seconds || 0}s avg`}/><Skill name="Vocabulary" value={week?.vocab_mastery || 0} color="teal" note="Mastery"/><Skill name="Exam prep" value={Math.round((week?.exam_avg_band || 0) * 10)} color="orange" note="Band × 10"/></section><section className="card activity-card"><div className="card-title"><div><h3>Weekly activity</h3><p>Your recent practice</p></div><span className="legend"><i></i> Live data</span></div><ActivityChart/><div className="activity-total"><b>{(week?.writing_submissions || 0) + (week?.grammar_drills || 0) + (week?.conversations || 0)} activities</b><span>Saved safely in your account</span></div></section></div>
+  const [progress, setProgress] = useState(null);
+  const [latestPlacement, setLatestPlacement] = useState(null);
+
+  useEffect(() => {
+    api('/api/user/progress').then(setProgress).catch(() => {});
+    api('/api/placement/latest').then(data => {
+      if (data?.hasAttempt) setLatestPlacement(data.results);
+    }).catch(() => {});
+  }, []);
+
+  const week = progress?.this_week;
+
+  return <section className="page overview">
+    <div className="welcome">
+      <div>
+        <p className="eyebrow">YOUR LEARNING DASHBOARD</p>
+        <h1>Good morning, {user?.name || 'Learner'} <span>👋</span></h1>
+        <p>You've made great progress this week. Ready for a focused session?</p>
+      </div>
+      <button className="primary" onClick={() => setView('writing')}>Continue learning <ArrowRight size={17}/></button>
+    </div>
+
+    {/* Placement Test Banner */}
+    <section className="recommend" style={{ marginBottom: 24, borderLeft: '4px solid var(--violet)', background: '#faf9fe' }}>
+      <div className="recommend-icon" style={{ background: '#edeaff', color: '#7057e8' }}>
+        <Target size={24}/>
+      </div>
+      <div>
+        <span className="eyebrow">ADAPTIVE ENGLISH DIAGNOSTIC</span>
+        <h3>{latestPlacement ? `Assessed Level: ${latestPlacement.finalLevel} · ${user?.level || latestPlacement.finalLevel}` : 'Discover Your Precise English Level'}</h3>
+        <p>{latestPlacement ? 'Review your 15-topic grammar heatmap, pace signals, and CPV strengths breakdown.' : 'Take our 30-question adaptive CPV test to personalize your practice drills and vocabulary.'}</p>
+      </div>
+      <button className="primary" onClick={() => setView('placement')}>
+        {latestPlacement ? 'View Diagnostic Report' : 'Take Placement Test'} <ArrowRight size={16}/>
+      </button>
+    </section>
+
+    <section className="hero-card">
+      <div className="hero-copy">
+        <span className="pill"><Sparkles size={14}/> TODAY'S FOCUS</span>
+        <h2>Write with more<br/>confidence.</h2>
+        <p>Practice a short professional message and get clarity-focused feedback from your AI coach.</p>
+        <button className="light-button" onClick={() => setView('writing')}>Start writing practice <ArrowRight size={16}/></button>
+      </div>
+      <div className="hero-visual">
+        <div className="paper">
+          <div className="paper-bar"></div>
+          <div className="line w90"></div>
+          <div className="line w70"></div>
+          <div className="highlight-line"><span></span></div>
+          <div className="line w80"></div>
+          <div className="comment-bubble"><Sparkles size={14}/><b>Nice phrasing!</b></div>
+        </div>
+      </div>
+    </section>
+
+    <div className="section-heading">
+      <div><h2>Your learning pulse</h2><p>A quick look at your last 7 days</p></div>
+      <button className="text-button">View report <ArrowRight size={15}/></button>
+    </div>
+
+    <div className="stats-grid">
+      <Metric icon={<Flame/>} tint="orange" value={week?.writing_submissions || 0} label="Writing sessions" trend="Saved to your progress"/>
+      <Metric icon={<Clock3/>} tint="purple" value={week?.grammar_drills || 0} label="Grammar drills" trend="This week"/>
+      <Metric icon={<Target/>} tint="green" value={`${week?.grammar_accuracy || 0}%`} label="Grammar accuracy" trend="From saved attempts"/>
+      <Metric icon={<Trophy/>} tint="yellow" value={week?.vocab_learned || 0} label="Words mastered" trend="Three correct uses each"/>
+    </div>
+
+    <div className="dashboard-grid">
+      <section className="card progress-card">
+        <div className="card-title"><div><h3>Skill progress</h3><p>Based on your saved activity</p></div><button className="round-more"><MoreHorizontal size={18}/></button></div>
+        <Skill name="Writing" value={week?.writing_avg_score || 0} color="violet" note="Average score"/>
+        <Skill name="Grammar" value={week?.grammar_accuracy || 0} color="blue" note={`Credited accuracy · ${week?.grammar_average_time_seconds || 0}s avg`}/>
+        <Skill name="Vocabulary" value={week?.vocab_mastery || 0} color="teal" note="Mastery"/>
+        <Skill name="Exam prep" value={Math.round((week?.exam_avg_band || 0) * 10)} color="orange" note="Band × 10"/>
+      </section>
+      <section className="card activity-card">
+        <div className="card-title"><div><h3>Weekly activity</h3><p>Your recent practice</p></div><span className="legend"><i/> Live data</span></div>
+        <ActivityChart/>
+        <div className="activity-total"><b>{(week?.writing_submissions || 0) + (week?.grammar_drills || 0) + (week?.conversations || 0)} activities</b><span>Saved safely in your account</span></div>
+      </section>
+    </div>
+
     <LearningInsights progress={progress} />
-    <section className="recommend"><div className="recommend-icon"><BookOpen size={22}/></div><div><span className="eyebrow">RECOMMENDED FOR YOU</span><h3>Strengthen subject–verb agreement</h3><p>You missed this pattern in 3 recent grammar drills. A 5-minute refresher can help.</p></div><button className="secondary" onClick={() => setView('grammar')}>Practice now <ArrowRight size={16}/></button></section>
+
+    <section className="recommend">
+      <div className="recommend-icon"><BookOpen size={22}/></div>
+      <div>
+        <span className="eyebrow">RECOMMENDED FOR YOU</span>
+        <h3>Strengthen subject–verb agreement</h3>
+        <p>You missed this pattern in 3 recent grammar drills. A 5-minute refresher can help.</p>
+      </div>
+      <button className="secondary" onClick={() => setView('grammar')}>Practice now <ArrowRight size={16}/></button>
+    </section>
   </section>;
 }
 
-function Metric({ icon, tint, value, label, trend }) { return <div className="metric card"><span className={`metric-icon ${tint}`}>{icon}</span><div><strong>{value}</strong><p>{label}</p><small>{trend}</small></div></div>; }
-function Skill({name,value,color,note}) { return <div className="skill"><div><span>{name}</span><b>{value}% <small>{note}</small></b></div><div className="progress"><i className={color} style={{width:`${value}%`}}/></div></div>; }
-function ActivityChart(){ const h=[44,76,58,92,68,83,51]; return <div className="chart">{h.map((v,i)=><div key={i} className="bar-wrap"><div className="bar" style={{height:`${v}%`}}></div><span>{['M','T','W','T','F','S','S'][i]}</span></div>)}</div>; }
-
-function LearningInsights({ progress }) { const strengths = progress?.strengths || []; const weaknesses = progress?.weak_areas || []; if (!strengths.length && !weaknesses.length) return <section className="insights-empty card"><b>Complete grammar or vocabulary questions to unlock your learning profile.</b><span>We will show topic accuracy, credited marks, and average time per question.</span></section>; return <section className="insights card"><div><span className="eyebrow">LEARNING PROFILE</span><h3>Your strengths and focus areas</h3></div><div className="insight-columns"><InsightList title="Strengths" items={strengths} tone="strength"/><InsightList title="Focus next" items={weaknesses} tone="focus"/></div></section>; }
-function InsightList({ title, items, tone }) { return <div className={`insight-list ${tone}`}><b>{title}</b>{items.length ? items.map((item, index) => <div key={`${item.kind}-${item.label}-${index}`}><span>{item.label}</span><strong>{item.accuracy}%</strong><small>{item.attempts} attempt{item.attempts === 1 ? '' : 's'} · {item.average_time_seconds}s avg</small></div>) : <small>{tone === 'strength' ? 'Complete two accurate attempts to confirm a strength.' : 'No focus area yet.'}</small>}</div>; }
-
-function Writing({ notify }) {
- const [text,setText]=useState('I am working on this report from Monday and I am confident it will meet client expectations. I will send the final version tomorrow.');
- const [context,setContext]=useState('Professional email'); const [result,setResult]=useState(null); const [loading,setLoading]=useState(false); const editorRef=useRef(null);
- const locate=(fragment)=>{ const el=editorRef.current; if(!el||!fragment) return; const idx=el.value.toLowerCase().indexOf(fragment.toLowerCase()); if(idx===-1){ el.focus(); el.select(); return notify('Couldn\u2019t find that exact phrase in your draft'); } el.focus(); el.setSelectionRange(idx,idx+fragment.length); };
- const analyze=async()=>{ if(!text.trim()) return notify('Write a few words first'); setLoading(true); try { const data = await api('/api/feedback/analyze-text',{method:'POST',body:{text,context}}); const issues = (data.feedback.errors || []).map((issue) => ({ wrong: issue.text, right: issue.should_be, label: 'Writing improvement', text: issue.reason })); const alternatives = (data.feedback.alternatives || []).map((item) => item.improved || item).filter(Boolean); const suggestions = (data.feedback.suggestions || []).map((item) => ({ type: item.type || 'suggestion', improved: item.improved || item.text, text: item.text })); setResult({ score: data.score, note: data.feedback.tone_feedback || data.feedback.tone || 'Your feedback is ready.', issues, suggestions, alternatives }); } catch(error) { notify(error.message); } finally { setLoading(false); } };
- return <section className="page studio"><div className="breadcrumb">Learning / <b>Writing studio</b></div><div className="studio-heading"><div><span className="eyebrow">AI WRITING COACH</span><h1>Make every sentence count.</h1><p>Write naturally. Your coach will help you sound clear, accurate, and confident.</p></div><div className="session-chip"><Clock3 size={16}/><span>Free session</span></div></div><div className="writing-layout"><section className="editor card"><div className="editor-top"><label>What are you writing?</label><select value={context} onChange={e=>setContext(e.target.value)}><option>Professional email</option><option>Essay</option><option>Casual message</option><option>Cover letter</option></select></div><textarea ref={editorRef} value={text} onChange={e=>setText(e.target.value)} placeholder="Start writing here..."/><div className="editor-foot"><span>{text.trim() ? text.trim().split(/\s+/).length : 0} words</span><button className="primary" onClick={analyze} disabled={loading}>{loading ? <><span className="loader"/> Reviewing...</> : <><Sparkles size={16}/> Get feedback</>}</button></div></section>{!result?<section className="feedback-empty card"><div className="empty-spark"><Sparkles size={25}/></div><h3>Your feedback will appear here</h3><p>We'll check grammar, clarity, vocabulary, and the tone for your chosen context.</p><div className="checks"><span><Check size={14}/> Grammar</span><span><Check size={14}/> Clarity</span><span><Check size={14}/> Tone</span></div></section>:<FeedbackPanel result={result} onLocate={locate} onReset={()=>{setResult(null); notify('Ready for another draft')}}/>}</div><section className="tip-row"><span className="tip-icon">✦</span><p><b>Coach's tip:</b> Aim for one clear idea per sentence. It makes your writing easier to follow.</p></section></section>;
+function Metric({ icon, tint, value, label, trend }) {
+  return <div className="metric card">
+    <span className={`metric-icon ${tint}`}>{icon}</span>
+    <div><strong>{value}</strong><p>{label}</p><small>{trend}</small></div>
+  </div>;
 }
 
-function FeedbackPanel({result,onReset,onLocate}){ return <section className="feedback-panel card"><div className="score-header"><div><span className="eyebrow">WRITING SCORE</span><h2>Great foundation.</h2></div><div className="score"><b>{result.score}</b><span>/100</span></div></div><p className="feedback-note">{result.note}</p>{result.suggestions?.length > 0 && <div className="suggestions"><span className="suggestions-label">STYLE & CLARITY SUGGESTIONS</span>{result.suggestions.map((s,i)=><article key={i} className="suggestion" onClick={s.text?()=>onLocate(s.text):undefined} title={s.text?'Click to highlight this in your draft':undefined}><b>{s.type}</b>{s.text ? <div className="suggestion-fix"><span className="sugg-orig">“{s.text}”</span><ArrowRight size={12}/><span className="sugg-new">{s.improved}</span></div> : <p>{s.improved}</p>}</article>)}</div>}<div className="feedback-tabs"><b>Suggestions</b><span>{result.issues.length} issues found</span></div><div className="issues">{result.issues.length ? result.issues.map((issue,i)=><article key={i} className="issue"><span className="issue-num">{i+1}</span><div><small>{issue.label}</small><p><del>{issue.wrong}</del> <ArrowRight size={13}/> <strong>{issue.right}</strong></p><em>{issue.text}</em></div></article>) : <p className="feedback-note">No specific errors were detected. Keep building on this strong draft.</p>}</div>{result.alternatives.length > 0 && <div className="alternatives"><span>Vocabulary alternatives to consider</span>{result.alternatives.map(x=><button key={x}>{x}</button>)}</div>}<button className="reset-button" onClick={onReset}><RotateCcw size={15}/> Start another draft</button></section>; }
+function Skill({ name, value, color, note }) {
+  return <div className="skill">
+    <div><span>{name}</span><b>{value}% <small>{note}</small></b></div>
+    <div className="progress"><i className={color} style={{ width: `${value}%` }}/></div>
+  </div>;
+}
 
-function Grammar({notify}) { const [drill,setDrill]=useState(null); const [choice,setChoice]=useState(''); const [result,setResult]=useState(null); const [loading,setLoading]=useState(false); const load=async()=>{setLoading(true);setChoice('');setResult(null);try{setDrill(await api('/api/drills/grammar'));}catch(error){notify(error.message);}finally{setLoading(false);}};useEffect(()=>{load();},[]);const select=async(answer)=>{if(!drill||result)return;setChoice(answer);setLoading(true);try{setResult(await api('/api/feedback/grammar-drill',{method:'POST',body:{drill_id:drill.id,user_answer:answer}}));}catch(error){notify(error.message);}finally{setLoading(false);}};return <section className="page module"><div className="module-intro"><span className="eyebrow">GRAMMAR LAB · LIVE DRILL</span><h1>Spot the pattern.</h1><p>Train your instincts with saved, contextual drills.</p></div><div className="module-grid"><section className="drill card"><div className="drill-top"><span>{drill ? `${drill.pillar.replaceAll('_',' ')}` : 'Loading drill'}</span><div className="tiny-progress"><i style={{width:result?'100%':'45%'}}/></div></div><h2>Choose the correct answer.</h2><div className="sentence">{drill?.question || 'Fetching your next drill…'}</div><div className="choices">{Object.entries(drill?.options || {}).map(([key,label])=><button className={result?(result.correct&&key===choice?'correct':!result.correct&&key===choice?'wrong':''):choice===key?'selected':''} onClick={()=>select(key)} disabled={loading||Boolean(result)} key={key}>{key}. {label}{result?.correct&&key===choice&&<Check size={17}/>}</button>)}</div>{result&&<div className="explanation"><Sparkles size={18}/><div><b>{result.correct?'Exactly right!':'A useful correction.'}</b><p>{result.explanation}</p><p>Running accuracy: <b>{result.accuracy_this_pillar}</b></p></div></div>}<button className="secondary wide" disabled={loading} onClick={load}>{loading?'Loading…':<>Next question <ArrowRight size={16}/></>}</button></section><aside className="concept card"><span className="concept-icon"><BookOpen size={22}/></span><span className="eyebrow">TODAY'S CONCEPT</span><h3>{drill?.pillar?.replaceAll('_',' ') || 'Grammar practice'}</h3><p>{result?.explanation || 'Answer a live drill to see a clear, memorable explanation of the grammar pattern.'}</p><button className="text-button" onClick={()=>notify('This rule is saved in your practice history')}>Save this rule <Star size={15}/></button></aside></div></section>; }
+function ActivityChart() {
+  const h = [44, 76, 58, 92, 68, 83, 51];
+  return <div className="chart">
+    {h.map((v, i) => (
+      <div key={i} className="bar-wrap">
+        <div className="bar" style={{ height: `${v}%` }}></div>
+        <span>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</span>
+      </div>
+    ))}
+  </div>;
+}
 
-function Vocabulary({notify}){ const [sentence,setSentence]=useState('');const [word,setWord]=useState(null);const [checked,setChecked]=useState(null);const [loading,setLoading]=useState(false);useEffect(()=>{api('/api/vocabulary/daily').then(setWord).catch(error=>notify(error.message));},[]);const check=async()=>{if(!sentence.trim())return notify('Write a sentence first');if(!word)return;setLoading(true);try{setChecked(await api('/api/feedback/vocabulary-check',{method:'POST',body:{word_id:word.word_id,user_sentence:sentence}}));}catch(error){notify(error.message);}finally{setLoading(false);}};const speak=()=>{if(!word)return;if(!window.speechSynthesis)return notify('Speech is not available in this browser');window.speechSynthesis.speak(new SpeechSynthesisUtterance(word.word));};return <section className="page module"><div className="module-intro"><span className="eyebrow">VOCABULARY IN CONTEXT</span><h1>Make new words yours.</h1><p>Use today's word in a sentence to build lasting recall.</p></div><div className="vocab-layout"><section className="word-card"><div className="word-card-top"><span>WORD OF THE DAY</span><button onClick={speak}><Volume2 size={17}/></button></div><h2>{word?.word || 'Loading…'}</h2><p className="pronounce"><i>Word of the day · Level {word?.difficulty || '—'}</i></p><p className="definition">{word?.definition}</p><div className="context-quote">“{word?.context_examples?.[0] || 'Your example will appear here.'}”</div><div className="word-tags"><span>{word?.category || 'context'}</span><span>practice</span></div></section><section className="use-card card"><span className="eyebrow">YOUR TURN</span><h2>Write a sentence using <i>{word?.word || 'today’s word'}</i>.</h2><textarea value={sentence} onChange={e=>setSentence(e.target.value.slice(0,500))} placeholder="Write a natural sentence that shows the word's meaning."/><div className="use-footer"><span>{sentence.length}/500</span><button className="primary" disabled={loading} onClick={check}>{loading?<><span className="loader"/> Checking…</>:<><Sparkles size={16}/> Check my sentence</>}</button></div>{checked&&<div className="vocab-result"><Check size={18}/><div><b>{checked.correct?'Strong use of the word!':'Keep refining your sentence.'}</b><p>{checked.feedback}{checked.better_version&&` Suggested: ${checked.better_version}`}</p></div><strong>{checked.sophistication_score}/10</strong></div>}</section></div><section className="review-card card"><div><span className="eyebrow">SPACED REPETITION</span><h3>Your attempts schedule the next review</h3><p>Master a word with three correct uses; your progress is saved automatically.</p></div><button className="secondary" onClick={()=>notify('Practice today’s word again to improve mastery')}>Keep practicing <ArrowRight size={15}/></button></section></section>; }
+function LearningInsights({ progress }) {
+  const strengths = progress?.strengths || [];
+  const weaknesses = progress?.weak_areas || [];
+  if (!strengths.length && !weaknesses.length) {
+    return <section className="insights-empty card">
+      <b>Complete grammar or vocabulary questions to unlock your learning profile.</b>
+      <span>We will show topic accuracy, credited marks, and average time per question.</span>
+    </section>;
+  }
+  return <section className="insights card">
+    <div><span className="eyebrow">LEARNING PROFILE</span><h3>Your strengths and focus areas</h3></div>
+    <div className="insight-columns">
+      <InsightList title="Strengths" items={strengths} tone="strength"/>
+      <InsightList title="Focus next" items={weaknesses} tone="focus"/>
+    </div>
+  </section>;
+}
 
-function Exam({notify}){const [running,setRunning]=useState(false); const [seconds,setSeconds]=useState(40*60);const [essay,setEssay]=useState('');const [result,setResult]=useState(null);const [loading,setLoading]=useState(false);useEffect(()=>{if(!running)return;const timer=setInterval(()=>setSeconds(time=>Math.max(0,time-1)),1000);return()=>clearInterval(timer);},[running]);useEffect(()=>{if(seconds===0)setRunning(false);},[seconds]);const words=essay.trim()?essay.trim().split(/\s+/).length:0;const submit=async()=>{if(words<25)return notify('Write at least 25 words before submitting.');setLoading(true);try{setResult(await api('/api/exam/submit',{method:'POST',body:{exam_type:'IELTS',task_type:'Writing Task 2',essay_text:essay}}));}catch(error){notify(error.message);}finally{setLoading(false);}};const minutes=String(Math.floor(seconds/60)).padStart(2,'0');const secs=String(seconds%60).padStart(2,'0');return <section className="page module"><div className="module-intro exam-heading"><div><span className="eyebrow">EXAM PREP · IELTS</span><h1>Practice under pressure.</h1><p>Get a detailed estimate across all four writing criteria.</p></div><div className="timer"><Clock3 size={18}/><b>{minutes}:{secs}</b><button onClick={()=>setRunning(!running)}>{running?'Pause':'Start'}</button></div></div><section className="exam-workspace"><div className="prompt card"><div className="prompt-label">WRITING TASK 2</div><h2>Some people believe that technology has made our lives more complicated. To what extent do you agree or disagree?</h2><p>Give reasons for your answer and include relevant examples from your own knowledge or experience.</p><div className="exam-meta"><span>40 minutes</span><span>Write at least 250 words</span></div></div><div className="essay card"><textarea value={essay} onChange={e=>setEssay(e.target.value)} placeholder="Write your response here..."/><div><span>{words} / 250 words</span><button className="primary" disabled={loading} onClick={submit}>{loading?<><span className="loader"/> Scoring…</>:<>Submit for scoring <ArrowRight size={15}/></>}</button></div></div></section>{result&&<section className="exam-result card"><span className="eyebrow">ESTIMATED IELTS BAND</span><h2>{result.scores.band_estimate}</h2><p>{result.feedback}</p><div>{Object.entries(result.scores).filter(([key])=>key!=='band_estimate').map(([key,value])=><b key={key}>{key.replaceAll('_',' ')}: {value}</b>)}</div></section>}<section className="criteria"><span>You'll be scored on</span><div><b>Task response</b><b>Coherence</b><b>Lexical resource</b><b>Grammar range</b></div></section></section>; }
+function InsightList({ title, items, tone }) {
+  return <div className={`insight-list ${tone}`}>
+    <b>{title}</b>
+    {items.length ? items.map((item, index) => (
+      <div key={`${item.kind}-${item.label}-${index}`}>
+        <span>{item.label}</span>
+        <strong>{item.accuracy}%</strong>
+        <small>{item.attempts} attempt{item.attempts === 1 ? '' : 's'} · {item.average_time_seconds}s avg</small>
+      </div>
+    )) : <small>{tone === 'strength' ? 'Complete two accurate attempts to confirm a strength.' : 'No focus area yet.'}</small>}
+  </div>;
+}
 
-function Roleplay({notify}){ const [messages,setMessages]=useState([{side:'bot', text:'Hello! Thanks for joining today. Could you briefly introduce yourself and tell me why this role interests you?'}]);const [draft,setDraft]=useState('');const [sessionId,setSessionId]=useState(null);const [notes,setNotes]=useState([]);const [loading,setLoading]=useState(false);const send=async()=>{if(!draft.trim()||loading)return;const message=draft;setMessages(m=>[...m,{side:'user',text:message}]);setDraft('');setLoading(true);try{const data=await api('/api/conversation/send',{method:'POST',body:{session_id:sessionId,scenario:'job_interview',user_message:message}});setSessionId(data.session_id);setNotes(n=>[...n,...data.grammar_notes]);setMessages(m=>[...m,{side:'bot',text:data.bot_response}]);}catch(error){notify(error.message);}finally{setLoading(false);}};return <section className="page module"><div className="module-intro"><span className="eyebrow">CONVERSATION PRACTICE</span><h1>Talk it through.</h1><p>Build fluency in a safe, realistic conversation.</p></div><div className="roleplay-layout"><section className="chat card"><div className="chat-header"><span className="scenario-icon"><UserRound size={20}/></span><div><b>Job interview</b><small>Product marketing role · Intermediate</small></div><span className="live"><i/> Live practice</span></div><div className="messages">{messages.map((m,i)=><div key={i} className={`message ${m.side}`}><div className="message-avatar">{m.side==='bot'?<Bot size={16}/>: 'AH'}</div><p>{m.text}</p></div>)}{loading&&<div className="message bot"><div className="message-avatar"><Bot size={16}/></div><p>Thinking…</p></div>}</div><div className="chat-input"><input value={draft} disabled={loading} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Write your response..."/><button disabled={loading} onClick={send}><Send size={17}/></button></div></section><aside className="coach-card card"><div className="coach-mark"><Sparkles size={20}/></div><span className="eyebrow">YOUR COACH IS LISTENING</span><h3>{notes.length ? 'Feedback from this chat' : 'Speak naturally first.'}</h3><p>{notes.length ? notes.map(note=>`${note.error} → ${note.correct}`).join(' · ') : 'Stay in the conversation. Grammar notes are saved silently as you practice.'}</p><div className="coach-list"><span><Check size={15}/> Grammar & word choice</span><span><Check size={15}/> Tone & confidence</span><span><Check size={15}/> Better ways to respond</span></div><button className="secondary wide" onClick={()=>notify(notes.length ? 'Your coaching notes are saved in this session.' : 'Send a message first to receive coaching notes.')}>End & review notes</button></aside></div></section>; }
+/* ==========================================================================
+   PLACEMENT TEST MODULE (4 UX Phases)
+   ========================================================================== */
+
+function PlacementTest({ setView, notify, user, onLevelUpdated }) {
+  const [phase, setPhase] = useState('welcome'); // 'welcome' | 'countdown' | 'test' | 'results'
+  const [countdownStep, setCountdownStep] = useState(3);
+  const [sessionId, setSessionId] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(45 * 60);
+  const [streak, setStreak] = useState(0);
+  const [answeredCategories, setAnsweredCategories] = useState([]);
+  const [results, setResults] = useState(null);
+  const [selectedHeatmapTopic, setSelectedHeatmapTopic] = useState(null);
+  const [showExplain, setShowExplain] = useState(false);
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+
+  // Check for existing completed placement test on mount
+  useEffect(() => {
+    api('/api/placement/latest')
+      .then((data) => {
+        if (data?.hasAttempt && data.results?.grammarHeatmap) {
+          setResults(data.results);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Timer effect for live test
+  useEffect(() => {
+    if (phase !== 'test') return;
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          notify('Time is up! Submitting test for scoring...');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  // Start test flow: starts session & countdown
+  const startPlacementFlow = async () => {
+    setLoading(true);
+    try {
+      const data = await api('/api/placement/start', { method: 'POST' });
+      setSessionId(data.session_id);
+      setCurrentQuestion(data.currentQuestion);
+      setAnsweredCategories([]);
+      setStreak(0);
+      setTimeRemaining(45 * 60);
+      setPhase('countdown');
+      setCountdownStep(3);
+
+      // Countdown sequence: 3 -> 2 -> 1 -> Go! -> test
+      let step = 3;
+      const countInterval = setInterval(() => {
+        step--;
+        if (step === 0) {
+          setCountdownStep('Go!');
+        } else if (step < 0) {
+          clearInterval(countInterval);
+          setPhase('test');
+          setQuestionStartTime(Date.now());
+        } else {
+          setCountdownStep(step);
+        }
+      }, 1000);
+    } catch (err) {
+      notify(err.message || 'Failed to start placement test');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Submit Answer with confidence chip
+  const submitAnswer = async (confidence) => {
+    if (selectedOption === null || !currentQuestion || loading) return;
+    setLoading(true);
+    const timeTaken = Math.max(1, Math.round((Date.now() - questionStartTime) / 1000));
+
+    try {
+      const response = await api('/api/placement/submit-answer', {
+        method: 'POST',
+        body: {
+          session_id: sessionId,
+          question_id: currentQuestion.id,
+          user_answer_index: selectedOption,
+          confidence,
+          time_taken_seconds: timeTaken
+        }
+      });
+
+      // Record answered category for progress bar
+      setAnsweredCategories((prev) => [...prev, currentQuestion.category]);
+
+      if (response.completed) {
+        setResults(response.results);
+        setPhase('results');
+        if (onLevelUpdated && response.results.finalLevel) {
+          onLevelUpdated(response.results.finalLevel);
+        }
+        notify(`🎉 Assessment complete! Your level: ${response.results.finalLevel}`);
+      } else {
+        // Next question
+        setCurrentQuestion(response.currentQuestion);
+        setSelectedOption(null);
+        setQuestionStartTime(Date.now());
+      }
+    } catch (err) {
+      notify(err.message || 'Failed to submit answer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format MM:SS timer
+  const formatTimer = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  return <section className="page placement-page">
+    {/* Phase 1: Welcome & Rules */}
+    {phase === 'welcome' && (
+      <div className="placement-welcome-card">
+        <div className="placement-welcome-header">
+          <span className="eyebrow">ADAPTIVE CPV PLACEMENT TEST</span>
+          <h1>Let's find your English level 🎯</h1>
+          <p>30 questions. 3 skills. 100% you.</p>
+        </div>
+
+        <div className="placement-rules-grid">
+          <div className="placement-rule-card">
+            <div className="placement-rule-icon">⏱️</div>
+            <div>
+              <strong>45 minutes on the clock</strong>
+              <span>Plenty of time to think — no rush, work at your own natural pace.</span>
+            </div>
+          </div>
+          <div className="placement-rule-card">
+            <div className="placement-rule-icon">🔀</div>
+            <div>
+              <strong>30 questions, mixed dynamically</strong>
+              <span>Smoothly combines Conversation 💬, Passages 📖, and Vocabulary 📚.</span>
+            </div>
+          </div>
+          <div className="placement-rule-card">
+            <div className="placement-rule-icon">🎯</div>
+            <div>
+              <strong>Rate your confidence</strong>
+              <span>Answer, then tell us how sure you are — that's part of the diagnostic magic.</span>
+            </div>
+          </div>
+          <div className="placement-rule-card">
+            <div className="placement-rule-icon">🚫</div>
+            <div>
+              <strong>No going back</strong>
+              <span>Trust your gut. Once you submit an answer with your confidence, we move forward.</span>
+            </div>
+          </div>
+          <div className="placement-rule-card">
+            <div className="placement-rule-icon">📊</div>
+            <div>
+              <strong>Full diagnostic breakdown</strong>
+              <span>Unlock your 15-topic grammar heatmap, pace insights, and custom learning path.</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="placement-welcome-actions">
+          <button className="placement-cta-large" onClick={startPlacementFlow} disabled={loading}>
+            {loading ? <><span className="loader"/> Preparing test...</> : <>I'm ready <ArrowRight size={18}/></>}
+          </button>
+          <button className="placement-explain-toggle" onClick={() => setShowExplain(!showExplain)}>
+            <HelpCircle size={15}/> What does this test actually measure?
+          </button>
+        </div>
+
+        {showExplain && (
+          <div className="placement-explain-box">
+            <h4>How the Adaptive Engine Evaluates You</h4>
+            <p>
+              Rather than a static exam, Linguafy continuously calibrates questions around your demonstrated ability.
+              Every question is tagged with one of 15 essential grammar dimensions and difficulty indices.
+              Your confidence ratings help distinguish genuine language mastery from lucky guesses, providing a rich,
+              actionable profile of your true English fluency.
+            </p>
+          </div>
+        )}
+
+        {results && (
+          <div style={{ marginTop: 32, textAlign: 'center', borderTop: '1px solid var(--line)', paddingTop: 20 }}>
+            <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 10px' }}>
+              You previously scored <b>{results.finalLevel}</b>. You can retake the test anytime or review your results.
+            </p>
+            <button className="secondary" onClick={() => setPhase('results')}>
+              View Previous Results <ArrowRight size={14}/>
+            </button>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Phase 2: 3-2-1 Countdown */}
+    {phase === 'countdown' && (
+      <div className="placement-countdown-screen">
+        <div className="countdown-number">{countdownStep}</div>
+        <div className="countdown-subtext">
+          {countdownStep === 3 && 'Take a breath.'}
+          {countdownStep === 2 && "You've got this."}
+          {countdownStep === 1 && 'Here we go.'}
+          {countdownStep === 'Go!' && 'Begin! 🚀'}
+        </div>
+      </div>
+    )}
+
+    {/* Phase 3: Live 30-Question Test */}
+    {phase === 'test' && currentQuestion && (
+      <div className="placement-test-shell">
+        {/* Top bar */}
+        <div className="placement-topbar-card">
+          <div className="placement-meta-left">
+            <span className="placement-qcount">
+              Question {currentQuestion.questionNumber} of {currentQuestion.totalQuestions}
+            </span>
+            {streak >= 2 && (
+              <span className="placement-streak-badge">
+                🔥 {streak} in a row
+              </span>
+            )}
+          </div>
+          <div className={`placement-timer ${timeRemaining < 180 ? 'timer-danger' : timeRemaining < 600 ? 'timer-warning' : ''}`}>
+            <Clock3 size={16}/>
+            <span>{formatTimer(timeRemaining)}</span>
+          </div>
+        </div>
+
+        {/* 30-Segment Progress Bar */}
+        <div className="placement-progress-bar">
+          {Array.from({ length: 30 }).map((_, idx) => {
+            const isAnswered = idx < answeredCategories.length;
+            const isCurrent = idx === answeredCategories.length;
+            const cat = answeredCategories[idx];
+            let segmentClass = 'placement-segment';
+            if (isAnswered) segmentClass += ` cat-${cat}`;
+            if (isCurrent) segmentClass += ' current';
+            return <div key={idx} className={segmentClass}/>;
+          })}
+        </div>
+
+        {/* Question Card */}
+        <div className="placement-card">
+          <div className={`placement-cat-indicator cat-${currentQuestion.category}`}>
+            {currentQuestion.category === 'C' && '💬 Conversation'}
+            {currentQuestion.category === 'P' && '📖 Reading Passage'}
+            {currentQuestion.category === 'V' && '📚 Vocabulary'}
+          </div>
+
+          {currentQuestion.passage && (
+            <div className="placement-passage-box">
+              <span className="placement-passage-label">Read the passage:</span>
+              <p style={{ margin: 0 }}>{currentQuestion.passage}</p>
+            </div>
+          )}
+
+          <h2 className="placement-question-text">{currentQuestion.question}</h2>
+
+          <div className="placement-options-list">
+            {currentQuestion.options.map((opt, idx) => {
+              const letter = String.fromCharCode(65 + idx);
+              const isSelected = selectedOption === opt.index;
+              return (
+                <button
+                  key={opt.index}
+                  className={`placement-option-btn ${isSelected ? 'selected' : ''}`}
+                  onClick={() => setSelectedOption(opt.index)}
+                  disabled={loading}
+                >
+                  <span className="placement-option-key">{letter}</span>
+                  <span>{opt.text}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Confidence Prompt */}
+          {selectedOption !== null && (
+            <div className="placement-confidence-bar">
+              <span className="placement-confidence-label">HOW SURE ARE YOU?</span>
+              <div className="placement-chips-group">
+                <button
+                  className="placement-conf-chip chip-certain"
+                  disabled={loading}
+                  onClick={() => submitAnswer('certain')}
+                >
+                  🟢 Certain
+                </button>
+                <button
+                  className="placement-conf-chip chip-fairly"
+                  disabled={loading}
+                  onClick={() => submitAnswer('fairly_sure')}
+                >
+                  🟡 Fairly Sure
+                </button>
+                <button
+                  className="placement-conf-chip chip-notsure"
+                  disabled={loading}
+                  onClick={() => submitAnswer('not_sure')}
+                >
+                  🟠 Not Sure
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Phase 4: Celebratory Results & Diagnostic Screen */}
+    {phase === 'results' && results && (
+      <div className="placement-results-shell">
+        {/* Section A: Headline Reveal */}
+        <section className="placement-reveal-card">
+          <div className="placement-level-badge-large">
+            {results.finalLevel}
+          </div>
+          <h1>You're a {results.finalLevel} — {results.levelDetails?.title || 'Upper Intermediate'}! 🎉</h1>
+          <p>{results.levelDetails?.encouragement || 'Great performance! You demonstrated reliable English instincts across conversation, comprehension, and vocabulary.'}</p>
+        </section>
+
+        {/* Section B: CPV Breakdown */}
+        <div className="placement-cpv-grid">
+          {results.cpvScores && Object.values(results.cpvScores).map((s) => (
+            <div key={s.category} className="placement-cpv-card">
+              <div className="placement-cpv-card-top">
+                <span className="placement-cpv-title">{s.icon} {s.name}</span>
+                <span className="placement-cpv-score">{s.accuracy}%</span>
+              </div>
+              <div className="placement-cpv-meter">
+                <i className={`meter-${s.category}`} style={{ width: `${s.accuracy}%` }}/>
+              </div>
+              <span className="placement-cpv-note">{s.note}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Section C: Champion Zones & Growth Zones */}
+        <div className="placement-zones-grid">
+          <div className="placement-zone-card champ-card">
+            <div className="placement-zone-header">
+              <span style={{ fontSize: 20 }}>🏆</span>
+              <h3>Where You're a Champion</h3>
+            </div>
+            <div className="placement-zone-list">
+              {results.championZones && results.championZones.length ? results.championZones.map((z, idx) => (
+                <div key={idx} className="placement-zone-item">
+                  <span>{z.displayName}</span>
+                  <b>{z.accuracy}% Accuracy</b>
+                </div>
+              )) : <span style={{ color: 'var(--muted)', fontSize: 12 }}>Keep practicing to highlight top zones!</span>}
+            </div>
+          </div>
+
+          <div className="placement-zone-card growth-card">
+            <div className="placement-zone-header">
+              <span style={{ fontSize: 20 }}>🌱</span>
+              <h3>Where You're Going to Be One</h3>
+            </div>
+            <div className="placement-zone-list">
+              {results.growthZones && results.growthZones.length ? results.growthZones.map((z, idx) => (
+                <div key={idx} className="placement-zone-item">
+                  <span>{z.displayName}</span>
+                  <b>{z.accuracy}% Accuracy</b>
+                </div>
+              )) : <span style={{ color: 'var(--muted)', fontSize: 12 }}>Solid all-around consistency!</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Section D: Full Grammar Heatmap */}
+        <div className="placement-heatmap-card">
+          <div className="placement-heatmap-head">
+            <div>
+              <span className="eyebrow">15-TOPIC DIAGNOSTIC PROFILE</span>
+              <h3 style={{ margin: 0, fontSize: 18 }}>Grammar & Structure Heatmap</h3>
+            </div>
+            <div className="placement-heatmap-legend">
+              <span><i className="heat-dot-strong"/> Strong (≥75%)</span>
+              <span><i className="heat-dot-average"/> Average (45-74%)</span>
+              <span><i className="heat-dot-weak"/> Focus (&lt;45%)</span>
+            </div>
+          </div>
+
+          <div className="placement-heatmap-grid">
+            {results.grammarHeatmap && Object.values(results.grammarHeatmap).map((topic) => (
+              <div
+                key={topic.topic}
+                className={`heatmap-tile tile-${topic.status}`}
+                onClick={() => topic.questions?.length && setSelectedHeatmapTopic(topic)}
+              >
+                <span className="heatmap-tile-title">{topic.displayName}</span>
+                <div className="heatmap-tile-meta">
+                  <b>{topic.accuracy !== null ? `${topic.accuracy}%` : '—'}</b>
+                  <span>{topic.sampleSize} Qs {topic.questions?.length ? '· View' : ''}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Section E: Pace & Time Insights & Vocab Tier */}
+        <div className="placement-zones-grid">
+          <div className="placement-pace-card">
+            <span className="eyebrow">TIMING & INTUITION SIGNALS</span>
+            <h3 style={{ margin: '4px 0 12px', fontSize: 16 }}>Pacing Insights</h3>
+            <div className="placement-pace-list">
+              {results.paceInsights && results.paceInsights.map((insight, i) => (
+                <div key={i} className="placement-pace-item">
+                  <span className="placement-pace-icon">{insight.icon}</span>
+                  <span>{insight.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="placement-pace-card">
+            <span className="eyebrow">VOCABULARY DOMAIN</span>
+            <h3 style={{ margin: '4px 0 8px', fontSize: 16 }}>{results.vocabTierReached || 'Tier 1 (Everyday Fluency)'}</h3>
+            <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 16px' }}>
+              {results.vocabTierReached?.includes('Tier 2')
+                ? 'You successfully navigated sophisticated idioms and academic collocations with high precision.'
+                : 'You demonstrated strong familiarity with high-frequency functional vocabulary.'}
+            </p>
+            <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}>
+              <b>Next step:</b> Expand sentence complexity in the Vocabulary studio using timed contextual drills.
+            </div>
+          </div>
+        </div>
+
+        {/* Section G: Suggested Learning Path */}
+        <div>
+          <div className="section-heading" style={{ marginBottom: 16 }}>
+            <div>
+              <span className="eyebrow">RECOMMENDED ACTION PLAN</span>
+              <h2>Your Custom Learning Path</h2>
+            </div>
+          </div>
+          <div className="placement-recs-grid">
+            {results.recommendations && results.recommendations.map((rec) => (
+              <div key={rec.id} className="placement-rec-card">
+                <span className="placement-rec-category">{rec.category}</span>
+                <h4>{rec.title}</h4>
+                <p>{rec.reason}</p>
+                <button
+                  className="secondary"
+                  onClick={() => {
+                    setView(rec.actionView);
+                    notify(`Opened ${rec.category}`);
+                  }}
+                >
+                  Start practice <ArrowRight size={14}/>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Section H: Final CTA */}
+        <div className="placement-final-cta-box">
+          <h3>Ready to start your personalized journey?</h3>
+          <p>Your dashboard, drills, and AI coach have now been calibrated to your {results.finalLevel} level.</p>
+          <button className="placement-cta-large" onClick={() => setView('overview')}>
+            Let's start learning <ArrowRight size={18}/>
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Heatmap Drilldown Modal */}
+    {selectedHeatmapTopic && (
+      <HeatmapQuestionModal
+        topic={selectedHeatmapTopic}
+        onClose={() => setSelectedHeatmapTopic(null)}
+      />
+    )}
+  </section>;
+}
+
+function HeatmapQuestionModal({ topic, onClose }) {
+  return <div className="heatmap-modal-backdrop" onClick={onClose}>
+    <div className="heatmap-modal-box" onClick={(e) => e.stopPropagation()}>
+      <div className="heatmap-modal-head">
+        <div>
+          <span className="eyebrow">TOPIC DRILLDOWN</span>
+          <h3>{topic.displayName} ({topic.accuracy}% accuracy)</h3>
+        </div>
+        <button className="icon-button" onClick={onClose}><X size={20}/></button>
+      </div>
+
+      <div>
+        {topic.questions && topic.questions.map((q, idx) => (
+          <div key={idx} className={`heatmap-q-item ${q.isCorrect ? 'q-correct' : 'q-wrong'}`}>
+            {q.passage && (
+              <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 6px', fontStyle: 'italic' }}>
+                Passage: "{q.passage.slice(0, 120)}..."
+              </p>
+            )}
+            <div className="heatmap-q-text">{idx + 1}. {q.question}</div>
+            <div className="heatmap-q-ans">
+              Your Answer: <b style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer || 'No answer'}</b>
+              {!q.isCorrect && (
+                <span style={{ marginLeft: 12, color: '#047857' }}>
+                  Correct: <b>{q.correctAnswer}</b>
+                </span>
+              )}
+            </div>
+            {q.explanation && (
+              <div className="heatmap-q-expl">
+                💡 <b>Explanation:</b> {q.explanation}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ==========================================================================
+   OTHER MODULES (Writing, Grammar, Vocabulary, Exam, Roleplay)
+   ========================================================================== */
+
+function Writing({ notify }) {
+  const [text, setText] = useState('I am working on this report from Monday and I am confident it will meet client expectations. I will send the final version tomorrow.');
+  const [context, setContext] = useState('Professional email');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const editorRef = useRef(null);
+
+  const locate = (fragment) => {
+    const el = editorRef.current;
+    if (!el || !fragment) return;
+    const idx = el.value.toLowerCase().indexOf(fragment.toLowerCase());
+    if (idx === -1) {
+      el.focus();
+      el.select();
+      return notify('Couldn\u2019t find that exact phrase in your draft');
+    }
+    el.focus();
+    el.setSelectionRange(idx, idx + fragment.length);
+  };
+
+  const analyze = async () => {
+    if (!text.trim()) return notify('Write a few words first');
+    setLoading(true);
+    try {
+      const data = await api('/api/feedback/analyze-text', { method: 'POST', body: { text, context } });
+      const issues = (data.feedback.errors || []).map((issue) => ({
+        wrong: issue.text,
+        right: issue.should_be,
+        label: 'Writing improvement',
+        text: issue.reason
+      }));
+      const alternatives = (data.feedback.alternatives || []).map((item) => item.improved || item).filter(Boolean);
+      const suggestions = (data.feedback.suggestions || []).map((item) => ({
+        type: item.type || 'suggestion',
+        improved: item.improved || item.text,
+        text: item.text
+      }));
+      setResult({
+        score: data.score,
+        note: data.feedback.tone_feedback || data.feedback.tone || 'Your feedback is ready.',
+        issues,
+        suggestions,
+        alternatives
+      });
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <section className="page studio">
+    <div className="breadcrumb">Learning / <b>Writing studio</b></div>
+    <div className="studio-heading">
+      <div>
+        <span className="eyebrow">AI WRITING COACH</span>
+        <h1>Make every sentence count.</h1>
+        <p>Write naturally. Your coach will help you sound clear, accurate, and confident.</p>
+      </div>
+      <div className="session-chip"><Clock3 size={16}/><span>Free session</span></div>
+    </div>
+    <div className="writing-layout">
+      <section className="editor card">
+        <div className="editor-top">
+          <label>What are you writing?</label>
+          <select value={context} onChange={e => setContext(e.target.value)}>
+            <option>Professional email</option>
+            <option>Essay</option>
+            <option>Casual message</option>
+            <option>Cover letter</option>
+          </select>
+        </div>
+        <textarea ref={editorRef} value={text} onChange={e => setText(e.target.value)} placeholder="Start writing here..."/>
+        <div className="editor-foot">
+          <span>{text.trim() ? text.trim().split(/\s+/).length : 0} words</span>
+          <button className="primary" onClick={analyze} disabled={loading}>
+            {loading ? <><span className="loader"/> Reviewing...</> : <><Sparkles size={16}/> Get feedback</>}
+          </button>
+        </div>
+      </section>
+      {!result ? (
+        <section className="feedback-empty card">
+          <div className="empty-spark"><Sparkles size={25}/></div>
+          <h3>Your feedback will appear here</h3>
+          <p>We'll check grammar, clarity, vocabulary, and the tone for your chosen context.</p>
+          <div className="checks">
+            <span><Check size={14}/> Grammar</span>
+            <span><Check size={14}/> Clarity</span>
+            <span><Check size={14}/> Tone</span>
+          </div>
+        </section>
+      ) : (
+        <FeedbackPanel result={result} onLocate={locate} onReset={() => { setResult(null); notify('Ready for another draft'); }}/>
+      )}
+    </div>
+    <section className="tip-row">
+      <span className="tip-icon">✦</span>
+      <p><b>Coach's tip:</b> Aim for one clear idea per sentence. It makes your writing easier to follow.</p>
+    </section>
+  </section>;
+}
+
+function FeedbackPanel({ result, onReset, onLocate }) {
+  return <section className="feedback-panel card">
+    <div className="score-header">
+      <div><span className="eyebrow">WRITING SCORE</span><h2>Great foundation.</h2></div>
+      <div className="score"><b>{result.score}</b><span>/100</span></div>
+    </div>
+    <p className="feedback-note">{result.note}</p>
+    {result.suggestions?.length > 0 && (
+      <div className="suggestions">
+        <span className="suggestions-label">STYLE & CLARITY SUGGESTIONS</span>
+        {result.suggestions.map((s, i) => (
+          <article key={i} className="suggestion" onClick={s.text ? () => onLocate(s.text) : undefined} title={s.text ? 'Click to highlight this in your draft' : undefined}>
+            <b>{s.type}</b>
+            {s.text ? (
+              <div className="suggestion-fix">
+                <span className="sugg-orig">“{s.text}”</span>
+                <ArrowRight size={12}/>
+                <span className="sugg-new">{s.improved}</span>
+              </div>
+            ) : <p>{s.improved}</p>}
+          </article>
+        ))}
+      </div>
+    )}
+    <div className="feedback-tabs"><b>Suggestions</b><span>{result.issues.length} issues found</span></div>
+    <div className="issues">
+      {result.issues.length ? result.issues.map((issue, i) => (
+        <article key={i} className="issue">
+          <span className="issue-num">{i + 1}</span>
+          <div>
+            <small>{issue.label}</small>
+            <p><del>{issue.wrong}</del> <ArrowRight size={13}/> <strong>{issue.right}</strong></p>
+            <em>{issue.text}</em>
+          </div>
+        </article>
+      )) : <p className="feedback-note">No specific errors were detected. Keep building on this strong draft.</p>}
+    </div>
+    {result.alternatives.length > 0 && (
+      <div className="alternatives">
+        <span>Vocabulary alternatives to consider</span>
+        {result.alternatives.map(x => <button key={x}>{x}</button>)}
+      </div>
+    )}
+    <button className="reset-button" onClick={onReset}><RotateCcw size={15}/> Start another draft</button>
+  </section>;
+}
 
 function GrammarEnhanced({ notify }) {
   const topics = ['all', 'tenses', 'prepositions', 'articles', 'subject_verb_agreement', 'conditionals', 'subjunctive', 'inversion'];
-  const [topic, setTopic] = useState('all'); const [drill, setDrill] = useState(null); const [choice, setChoice] = useState(''); const [confidence, setConfidence] = useState('sure'); const [result, setResult] = useState(null); const [loading, setLoading] = useState(false); const [startedAt, setStartedAt] = useState(Date.now());
-  const load = async (nextTopic = topic) => { setLoading(true); setChoice(''); setResult(null); setConfidence('sure'); try { const query = nextTopic === 'all' ? '' : `?pillar=${encodeURIComponent(nextTopic)}`; const next = await api(`/api/drills/grammar${query}`); setDrill(next); setStartedAt(Date.now()); } catch (error) { notify(error.message); } finally { setLoading(false); } };
+  const [topic, setTopic] = useState('all');
+  const [drill, setDrill] = useState(null);
+  const [choice, setChoice] = useState('');
+  const [confidence, setConfidence] = useState('sure');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [startedAt, setStartedAt] = useState(Date.now());
+
+  const load = async (nextTopic = topic) => {
+    setLoading(true);
+    setChoice('');
+    setResult(null);
+    setConfidence('sure');
+    try {
+      const query = nextTopic === 'all' ? '' : `?pillar=${encodeURIComponent(nextTopic)}`;
+      const next = await api(`/api/drills/grammar${query}`);
+      setDrill(next);
+      setStartedAt(Date.now());
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => { load(); }, [topic]);
-  const select = async (answer) => { if (!drill || result) return; setChoice(answer); setLoading(true); try { setResult(await api('/api/feedback/grammar-drill', { method: 'POST', body: { drill_id: drill.id, user_answer: answer, confidence, time_spent_seconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000)) } })); } catch (error) { notify(error.message); } finally { setLoading(false); } };
-  return <section className="page module"><div className="module-intro"><span className="eyebrow">GRAMMAR LAB · ADAPTIVE DRILL</span><h1>Find your weak spots.</h1><p>Choose a grammar topic. We track credited accuracy and time for every question.</p></div><div className="topic-picker"><label>Test topic<select value={topic} onChange={event => setTopic(event.target.value)}>{topics.map(item => <option key={item} value={item}>{item === 'all' ? 'All topics' : item.replaceAll('_', ' ')}</option>)}</select></label><span>{drill ? `Difficulty ${drill.difficulty}/5` : 'Loading question'}</span></div><div className="module-grid"><section className="drill card"><div className="drill-top"><span>{drill ? drill.pillar.replaceAll('_', ' ') : 'Loading drill'}</span><div className="tiny-progress"><i style={{ width: result ? '100%' : '45%' }}/></div></div><h2>Choose the correct answer.</h2><div className="sentence">{drill?.question || 'Fetching your next drill…'}</div><div className="confidence-choice"><b>How sure are you?</b><div><button className={confidence === 'sure' ? 'selected' : ''} disabled={Boolean(result)} onClick={() => setConfidence('sure')}>I am sure · marks count</button><button className={confidence === 'not_sure' ? 'selected unsure' : ''} disabled={Boolean(result)} onClick={() => setConfidence('not_sure')}>Not sure · 0 marks if correct</button></div></div><div className="choices">{Object.entries(drill?.options || {}).map(([key, label]) => <button className={result ? (result.correct && key === choice ? 'correct' : !result.correct && key === choice ? 'wrong' : '') : choice === key ? 'selected' : ''} onClick={() => select(key)} disabled={loading || Boolean(result)} key={key}>{key}. {label}{result?.correct && key === choice && <Check size={17}/>}</button>)}</div>{result && <div className="explanation"><Sparkles size={18}/><div><b>{result.correct ? result.awarded_points ? 'Exactly right!' : 'Correct, but no marks awarded.' : 'A useful correction.'}</b><p>{result.explanation}</p><p>Topic accuracy: <b>{result.credited_accuracy}% credited</b> ({result.raw_accuracy}% answers correct) · {result.average_time_seconds}s average</p></div></div>}<button className="secondary wide" disabled={loading} onClick={() => load()}>{loading ? 'Loading…' : <>Next question <ArrowRight size={16}/></>}</button></section><aside className="concept card"><span className="concept-icon"><BookOpen size={22}/></span><span className="eyebrow">TOPIC INSIGHT</span><h3>{drill?.pillar?.replaceAll('_', ' ') || 'Grammar practice'}</h3><p>{result ? `${result.credited_accuracy}% credited accuracy, with ${result.average_time_seconds}s average response time for this topic.` : 'Choose an answer and tell us how confident you are. Correct answers marked Not sure show feedback but earn zero marks.'}</p></aside></div></section>;
+
+  const select = async (answer) => {
+    if (!drill || result) return;
+    setChoice(answer);
+    setLoading(true);
+    try {
+      setResult(await api('/api/feedback/grammar-drill', {
+        method: 'POST',
+        body: {
+          drill_id: drill.id,
+          user_answer: answer,
+          confidence,
+          time_spent_seconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+        }
+      }));
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <section className="page module">
+    <div className="module-intro">
+      <span className="eyebrow">GRAMMAR LAB · ADAPTIVE DRILL</span>
+      <h1>Find your weak spots.</h1>
+      <p>Choose a grammar topic. We track credited accuracy and time for every question.</p>
+    </div>
+    <div className="topic-picker">
+      <label>Test topic
+        <select value={topic} onChange={event => setTopic(event.target.value)}>
+          {topics.map(item => <option key={item} value={item}>{item === 'all' ? 'All topics' : item.replaceAll('_', ' ')}</option>)}
+        </select>
+      </label>
+      <span>{drill ? `Difficulty ${drill.difficulty}/5` : 'Loading question'}</span>
+    </div>
+    <div className="module-grid">
+      <section className="drill card">
+        <div className="drill-top">
+          <span>{drill ? drill.pillar.replaceAll('_', ' ') : 'Loading drill'}</span>
+          <div className="tiny-progress"><i style={{ width: result ? '100%' : '45%' }}/></div>
+        </div>
+        <h2>Choose the correct answer.</h2>
+        <div className="sentence">{drill?.question || 'Fetching your next drill…'}</div>
+        <div className="confidence-choice">
+          <b>How sure are you?</b>
+          <div>
+            <button className={confidence === 'sure' ? 'selected' : ''} disabled={Boolean(result)} onClick={() => setConfidence('sure')}>
+              I am sure · marks count
+            </button>
+            <button className={confidence === 'not_sure' ? 'selected unsure' : ''} disabled={Boolean(result)} onClick={() => setConfidence('not_sure')}>
+              Not sure · 0 marks if correct
+            </button>
+          </div>
+        </div>
+        <div className="choices">
+          {Object.entries(drill?.options || {}).map(([key, label]) => (
+            <button
+              className={result ? (result.correct && key === choice ? 'correct' : !result.correct && key === choice ? 'wrong' : '') : choice === key ? 'selected' : ''}
+              onClick={() => select(key)}
+              disabled={loading || Boolean(result)}
+              key={key}
+            >
+              {key}. {label}{result?.correct && key === choice && <Check size={17}/>}
+            </button>
+          ))}
+        </div>
+        {result && (
+          <div className="explanation">
+            <Sparkles size={18}/>
+            <div>
+              <b>{result.correct ? result.awarded_points ? 'Exactly right!' : 'Correct, but no marks awarded.' : 'A useful correction.'}</b>
+              <p>{result.explanation}</p>
+              <p>Topic accuracy: <b>{result.credited_accuracy}% credited</b> ({result.raw_accuracy}% answers correct) · {result.average_time_seconds}s average</p>
+            </div>
+          </div>
+        )}
+        <button className="secondary wide" disabled={loading} onClick={() => load()}>
+          {loading ? 'Loading…' : <>Next question <ArrowRight size={16}/></>}
+        </button>
+      </section>
+      <aside className="concept card">
+        <span className="concept-icon"><BookOpen size={22}/></span>
+        <span className="eyebrow">TOPIC INSIGHT</span>
+        <h3>{drill?.pillar?.replaceAll('_', ' ') || 'Grammar practice'}</h3>
+        <p>{result ? `${result.credited_accuracy}% credited accuracy, with ${result.average_time_seconds}s average response time for this topic.` : 'Choose an answer and tell us how confident you are. Correct answers marked Not sure show feedback but earn zero marks.'}</p>
+      </aside>
+    </div>
+  </section>;
 }
 
 function VocabularyEnhanced({ notify }) {
-  const levels = ['basic', 'intermediate', 'advanced', 'hard']; const [level, setLevel] = useState('basic'); const [sentence, setSentence] = useState(''); const [word, setWord] = useState(null); const [checked, setChecked] = useState(null); const [loading, setLoading] = useState(false); const [startedAt, setStartedAt] = useState(Date.now());
-  useEffect(() => { setLoading(true); setSentence(''); setChecked(null); api(`/api/vocabulary/daily?level=${level}`).then((next) => { setWord(next); setStartedAt(Date.now()); }).catch(error => notify(error.message)).finally(() => setLoading(false)); }, [level]);
-  const check = async () => { if (!sentence.trim()) return notify('Write a sentence first'); if (!word) return; setLoading(true); try { setChecked(await api('/api/feedback/vocabulary-check', { method: 'POST', body: { word_id: word.word_id, user_sentence: sentence, time_spent_seconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000)) } })); } catch (error) { notify(error.message); } finally { setLoading(false); } };
-  const speak = () => { if (!word) return; if (!window.speechSynthesis) return notify('Speech is not available in this browser'); window.speechSynthesis.speak(new SpeechSynthesisUtterance(word.word)); };
-  return <section className="page module"><div className="module-intro"><span className="eyebrow">VOCABULARY IN CONTEXT</span><h1>Grow from basic to hard.</h1><p>Pick a level, use the word naturally, and see both accuracy and time in your learning profile.</p></div><div className="topic-picker vocabulary-level"><label>Vocabulary level<select value={level} onChange={event => setLevel(event.target.value)}>{levels.map(item => <option key={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}</select></label><span>{word ? `Difficulty ${word.difficulty}/5` : 'Loading word'}</span></div><div className="vocab-layout"><section className="word-card"><div className="word-card-top"><span>{level.toUpperCase()} VOCABULARY</span><button onClick={speak}><Volume2 size={17}/></button></div><h2>{word?.word || 'Loading…'}</h2><p className="pronounce"><i>{word?.category || 'context'} · Level {word?.difficulty || '—'}</i></p><p className="definition">{word?.definition}</p><div className="context-quote">“{word?.context_examples?.[0] || 'Your example will appear here.'}”</div><div className="word-tags"><span>{level}</span><span>timed practice</span></div></section><section className="use-card card"><span className="eyebrow">YOUR TURN</span><h2>Write a sentence using <i>{word?.word || 'today’s word'}</i>.</h2><textarea value={sentence} onChange={event => setSentence(event.target.value.slice(0, 500))} placeholder="Write a natural sentence that shows the word's meaning."/><div className="use-footer"><span>{sentence.length}/500</span><button className="primary" disabled={loading} onClick={check}>{loading ? <><span className="loader"/> Checking…</> : <><Sparkles size={16}/> Check my sentence</>}</button></div>{checked && <div className="vocab-result"><Check size={18}/><div><b>{checked.correct ? 'Strong use of the word!' : 'Keep refining your sentence.'}</b><p>{checked.feedback}{checked.better_version && ` Suggested: ${checked.better_version}`}</p><small>{checked.user_progress?.accuracy || 0}% accuracy · {checked.user_progress?.correct_uses || 0} correct use{checked.user_progress?.correct_uses === 1 ? '' : 's'}</small></div><strong>{checked.sophistication_score}/10</strong></div>}</section></div></section>;
+  const levels = ['basic', 'intermediate', 'advanced', 'hard'];
+  const [level, setLevel] = useState('basic');
+  const [sentence, setSentence] = useState('');
+  const [word, setWord] = useState(null);
+  const [checked, setChecked] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [startedAt, setStartedAt] = useState(Date.now());
+
+  useEffect(() => {
+    setLoading(true);
+    setSentence('');
+    setChecked(null);
+    api(`/api/vocabulary/daily?level=${level}`)
+      .then((next) => {
+        setWord(next);
+        setStartedAt(Date.now());
+      })
+      .catch(error => notify(error.message))
+      .finally(() => setLoading(false));
+  }, [level]);
+
+  const check = async () => {
+    if (!sentence.trim()) return notify('Write a sentence first');
+    if (!word) return;
+    setLoading(true);
+    try {
+      setChecked(await api('/api/feedback/vocabulary-check', {
+        method: 'POST',
+        body: {
+          word_id: word.word_id,
+          user_sentence: sentence,
+          time_spent_seconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+        }
+      }));
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const speak = () => {
+    if (!word) return;
+    if (!window.speechSynthesis) return notify('Speech is not available in this browser');
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(word.word));
+  };
+
+  return <section className="page module">
+    <div className="module-intro">
+      <span className="eyebrow">VOCABULARY IN CONTEXT</span>
+      <h1>Grow from basic to hard.</h1>
+      <p>Pick a level, use the word naturally, and see both accuracy and time in your learning profile.</p>
+    </div>
+    <div className="topic-picker vocabulary-level">
+      <label>Vocabulary level
+        <select value={level} onChange={event => setLevel(event.target.value)}>
+          {levels.map(item => <option key={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}
+        </select>
+      </label>
+      <span>{word ? `Difficulty ${word.difficulty}/5` : 'Loading word'}</span>
+    </div>
+    <div className="vocab-layout">
+      <section className="word-card">
+        <div className="word-card-top">
+          <span>{level.toUpperCase()} VOCABULARY</span>
+          <button onClick={speak}><Volume2 size={17}/></button>
+        </div>
+        <h2>{word?.word || 'Loading…'}</h2>
+        <p className="pronounce"><i>{word?.category || 'context'} · Level {word?.difficulty || '—'}</i></p>
+        <p className="definition">{word?.definition}</p>
+        <div className="context-quote">“{word?.context_examples?.[0] || 'Your example will appear here.'}”</div>
+        <div className="word-tags"><span>{level}</span><span>timed practice</span></div>
+      </section>
+      <section className="use-card card">
+        <span className="eyebrow">YOUR TURN</span>
+        <h2>Write a sentence using <i>{word?.word || 'today’s word'}</i>.</h2>
+        <textarea value={sentence} onChange={event => setSentence(event.target.value.slice(0, 500))} placeholder="Write a natural sentence that shows the word's meaning."/>
+        <div className="use-footer">
+          <span>{sentence.length}/500</span>
+          <button className="primary" disabled={loading} onClick={check}>
+            {loading ? <><span className="loader"/> Checking…</> : <><Sparkles size={16}/> Check my sentence</>}
+          </button>
+        </div>
+        {checked && (
+          <div className="vocab-result">
+            <Check size={18}/>
+            <div>
+              <b>{checked.correct ? 'Strong use of the word!' : 'Keep refining your sentence.'}</b>
+              <p>{checked.feedback}{checked.better_version && ` Suggested: ${checked.better_version}`}</p>
+              <small>{checked.user_progress?.accuracy || 0}% accuracy · {checked.user_progress?.correct_uses || 0} correct use{checked.user_progress?.correct_uses === 1 ? '' : 's'}</small>
+            </div>
+            <strong>{checked.sophistication_score}/10</strong>
+          </div>
+        )}
+      </section>
+    </div>
+  </section>;
+}
+
+function Exam({ notify }) {
+  const [running, setRunning] = useState(false);
+  const [seconds, setSeconds] = useState(40 * 60);
+  const [essay, setEssay] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(() => setSeconds(time => Math.max(0, time - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [running]);
+
+  useEffect(() => {
+    if (seconds === 0) setRunning(false);
+  }, [seconds]);
+
+  const words = essay.trim() ? essay.trim().split(/\s+/).length : 0;
+  const submit = async () => {
+    if (words < 25) return notify('Write at least 25 words before submitting.');
+    setLoading(true);
+    try {
+      setResult(await api('/api/exam/submit', {
+        method: 'POST',
+        body: { exam_type: 'IELTS', task_type: 'Writing Task 2', essay_text: essay }
+      }));
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const secs = String(seconds % 60).padStart(2, '0');
+
+  return <section className="page module">
+    <div className="module-intro exam-heading">
+      <div>
+        <span className="eyebrow">EXAM PREP · IELTS</span>
+        <h1>Practice under pressure.</h1>
+        <p>Get a detailed estimate across all four writing criteria.</p>
+      </div>
+      <div className="timer">
+        <Clock3 size={18}/>
+        <b>{minutes}:{secs}</b>
+        <button onClick={() => setRunning(!running)}>{running ? 'Pause' : 'Start'}</button>
+      </div>
+    </div>
+    <section className="exam-workspace">
+      <div className="prompt card">
+        <div className="prompt-label">WRITING TASK 2</div>
+        <h2>Some people believe that technology has made our lives more complicated. To what extent do you agree or disagree?</h2>
+        <p>Give reasons for your answer and include relevant examples from your own knowledge or experience.</p>
+        <div className="exam-meta"><span>40 minutes</span><span>Write at least 250 words</span></div>
+      </div>
+      <div className="essay card">
+        <textarea value={essay} onChange={e => setEssay(e.target.value)} placeholder="Write your response here..."/>
+        <div>
+          <span>{words} / 250 words</span>
+          <button className="primary" disabled={loading} onClick={submit}>
+            {loading ? <><span className="loader"/> Scoring…</> : <>Submit for scoring <ArrowRight size={15}/></>}
+          </button>
+        </div>
+      </div>
+    </section>
+    {result && (
+      <section className="exam-result card">
+        <span className="eyebrow">ESTIMATED IELTS BAND</span>
+        <h2>{result.scores.band_estimate}</h2>
+        <p>{result.feedback}</p>
+        <div>
+          {Object.entries(result.scores).filter(([key]) => key !== 'band_estimate').map(([key, value]) => (
+            <b key={key}>{key.replaceAll('_', ' ')}: {value}</b>
+          ))}
+        </div>
+      </section>
+    )}
+    <section className="criteria">
+      <span>You'll be scored on</span>
+      <div><b>Task response</b><b>Coherence</b><b>Lexical resource</b><b>Grammar range</b></div>
+    </section>
+  </section>;
+}
+
+function Roleplay({ notify }) {
+  const [messages, setMessages] = useState([{ side: 'bot', text: 'Hello! Thanks for joining today. Could you briefly introduce yourself and tell me why this role interests you?' }]);
+  const [draft, setDraft] = useState('');
+  const [sessionId, setSessionId] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const send = async () => {
+    if (!draft.trim() || loading) return;
+    const message = draft;
+    setMessages(m => [...m, { side: 'user', text: message }]);
+    setDraft('');
+    setLoading(true);
+    try {
+      const data = await api('/api/conversation/send', {
+        method: 'POST',
+        body: { session_id: sessionId, scenario: 'job_interview', user_message: message }
+      });
+      setSessionId(data.session_id);
+      setNotes(n => [...n, ...data.grammar_notes]);
+      setMessages(m => [...m, { side: 'bot', text: data.bot_response }]);
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <section className="page module">
+    <div className="module-intro">
+      <span className="eyebrow">CONVERSATION PRACTICE</span>
+      <h1>Talk it through.</h1>
+      <p>Build fluency in a safe, realistic conversation.</p>
+    </div>
+    <div className="roleplay-layout">
+      <section className="chat card">
+        <div className="chat-header">
+          <span className="scenario-icon"><UserRound size={20}/></span>
+          <div><b>Job interview</b><small>Product marketing role · Intermediate</small></div>
+          <span className="live"><i/> Live practice</span>
+        </div>
+        <div className="messages">
+          {messages.map((m, i) => (
+            <div key={i} className={`message ${m.side}`}>
+              <div className="message-avatar">{m.side === 'bot' ? <Bot size={16}/> : 'AH'}</div>
+              <p>{m.text}</p>
+            </div>
+          ))}
+          {loading && (
+            <div className="message bot">
+              <div className="message-avatar"><Bot size={16}/></div>
+              <p>Thinking…</p>
+            </div>
+          )}
+        </div>
+        <div className="chat-input">
+          <input value={draft} disabled={loading} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Write your response..."/>
+          <button disabled={loading} onClick={send}><Send size={17}/></button>
+        </div>
+      </section>
+      <aside className="coach-card card">
+        <div className="coach-mark"><Sparkles size={20}/></div>
+        <span className="eyebrow">YOUR COACH IS LISTENING</span>
+        <h3>{notes.length ? 'Feedback from this chat' : 'Speak naturally first.'}</h3>
+        <p>{notes.length ? notes.map(note => `${note.error} → ${note.correct}`).join(' · ') : 'Stay in the conversation. Grammar notes are saved silently as you practice.'}</p>
+        <div className="coach-list">
+          <span><Check size={15}/> Grammar & word choice</span>
+          <span><Check size={15}/> Tone & confidence</span>
+          <span><Check size={15}/> Better ways to respond</span>
+        </div>
+        <button className="secondary wide" onClick={() => notify(notes.length ? 'Your coaching notes are saved in this session.' : 'Send a message first to receive coaching notes.')}>
+          End & review notes
+        </button>
+      </aside>
+    </div>
+  </section>;
 }
 
 createRoot(document.getElementById('root')).render(<App/>);

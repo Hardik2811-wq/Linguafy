@@ -8,6 +8,7 @@ import vocabulary from './routes/vocabulary.js';
 import exam from './routes/exam.js';
 import conversation from './routes/conversation.js';
 import dashboard from './routes/dashboard.js';
+import placement from './routes/placement.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 
 const app = express();
@@ -46,7 +47,7 @@ app.get('/', (_req, res) => res.json({
   service: 'Linguafy API',
   app: config.frontendOrigin,
   health: '/health',
-  endpoints: ['/api/auth/signup', '/api/auth/login', '/api/feedback/analyze-text', '/api/drills/grammar', '/api/vocabulary/daily', '/api/exam/submit', '/api/conversation/send', '/api/user/progress']
+  endpoints: ['/api/auth/signup', '/api/auth/login', '/api/feedback/analyze-text', '/api/drills/grammar', '/api/vocabulary/daily', '/api/exam/submit', '/api/conversation/send', '/api/user/progress', '/api/placement/start']
 }));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'linguafy-api' }));
 app.use('/api/auth', auth);
@@ -58,5 +59,6 @@ app.use('/api/vocabulary', vocabulary);
 app.use('/api/exam', exam);
 app.use('/api/conversation', conversation);
 app.use('/api/user', dashboard);
+app.use('/api/placement', placement);
 app.use(notFound); app.use(errorHandler);
 app.listen(config.port, () => console.log(`Linguafy API listening on http://localhost:${config.port}`));

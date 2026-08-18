@@ -30,12 +30,13 @@ running without a database).
 
 **Modules**
 
-1. **Dashboard (Overview)** — live stats pulled from saved activity.
-2. **Writing studio** — text + context → Groq grammar/tone/vocabulary feedback.
-3. **Grammar lab** — random drill from a question bank, instant answer checking.
-4. **Vocabulary** — word of the day + AI-validated sentence writing.
-5. **Exam prep (IELTS)** — real 40-minute timer + Groq band scoring.
-6. **Roleplay / conversation** — multi-turn chat with an AI interview partner.
+1. **Dashboard (Overview)** — live stats pulled from saved activity + diagnostic test summary.
+2. **Placement test (Adaptive CPV)** — 30-question adaptive diagnostic covering all 15 grammar topics ($15 \times 2 = 30$), pace analysis, confidence scoring, interactive heatmap, and instant CEFR level assessment.
+3. **Writing studio** — text + context → Groq grammar/tone/vocabulary feedback.
+4. **Grammar lab** — random drill from a question bank, instant answer checking.
+5. **Vocabulary** — word of the day + AI-validated sentence writing.
+6. **Exam prep (IELTS)** — real 40-minute timer + Groq band scoring.
+7. **Roleplay / conversation** — multi-turn chat with an AI interview partner.
 
 **What the project is NOT (yet)**
 
@@ -44,7 +45,7 @@ running without a database).
 - **No automated tests, linter, or CI** are configured.
 - The **whole frontend still lives in one file** (`src/main.jsx`). The planned
   split into `components/` + `pages/` (see §9) has not happened yet.
-- `language_level` (A1–C2) is stored and displayed but **never changes content**.
+- `language_level` (A1–C2) is calibrated and assigned automatically upon completing the Placement Test.
 
 **Tech stack (as implemented)**
 
@@ -91,15 +92,18 @@ English Trainer/
 │       │                             #   Fix Roadmap, Verified Working, DB Checks)
 │       └── findings.json             # machine-readable copy of the 19 findings
 ├── scripts/
-│   └── push_to_github.ps1            # helper: stage, commit, rebase, push
+│   ├── push_to_github.ps1            # helper: stage, commit, rebase, push
+│   └── test_placement.mjs            # diagnostic test: simulates 30-Q adaptive placement test
 ├── supabase/
-│   ├── schema.sql                    # DB schema (run in Supabase SQL editor)
+│   ├── schema.sql                    # DB schema (run in Supabase SQL editor; includes placement tables)
 │   └── seed.sql                      # 3 grammar drills + 3 vocabulary words
 ├── src/
-│   ├── main.jsx                      # ENTIRE frontend (components + render)
+│   ├── main.jsx                      # ENTIRE frontend (components + render, including PlacementTest)
 │   ├── api.js                        # fetch wrapper, token/session helpers
 │   ├── styles.css                    # all app styling
-│   └── auth.css                      # auth page + exam result styles
+│   ├── auth.css                      # auth page + exam result styles
+│   ├── insights.css                  # profile learning insights
+│   └── placement.css                 # 4-phase placement test styles (welcome, countdown, test, results)
 ├── backend/                          # Express API (separate Vercel project)
 │   ├── package.json                  # express, cors, dotenv, zod, groq-sdk, supabase-js
 │   ├── package-lock.json             # generated lockfile (do not edit)
@@ -109,11 +113,14 @@ English Trainer/
 │   └── src/
 │       ├── index.js                  # app bootstrap, CORS, route mounting
 │       ├── config.js                 # env parsing, normalizeOrigin, isSupabaseConfigured
+│       ├── data/
+│       │   └── placement_questions.json # 400 CPV questions (134 C, 133 P, 133 V across 15 topics)
 │       ├── middleware/
 │       │   ├── auth.js               # requireAuth (JWT or local token)
 │       │   └── errors.js             # notFound + errorHandler
 │       ├── routes/
 │       │   ├── auth.js               # signup / login / me
+│       │   ├── placement.js          # POST /api/placement/start, /submit-answer, GET /latest
 │       │   ├── writing.js            # POST /api/feedback/analyze-text
 │       │   ├── grammar.js            # GET /api/drills/grammar, POST /api/feedback/grammar-drill
 │       │   ├── vocabulary.js         # GET /api/vocabulary/daily, POST /api/feedback/vocabulary-check
@@ -121,6 +128,7 @@ English Trainer/
 │       │   ├── conversation.js       # POST /api/conversation/send
 │       │   └── dashboard.js          # GET /api/user/progress
 │       └── services/
+│           ├── placement.js          # 30-from-400 adaptive engine, 15-topic balancer, CEFR scorer
 │           ├── groq.js               # Groq JSON completions (4 task prompts)
 │           ├── supabase.js           # admin + public client factories, dbError
 │           └── local.js              # in-memory "local mode" fallback storage
@@ -212,8 +220,9 @@ views via `useState`.
 |------------------|--------------------------------------------------------------------|
 | `App`            | Shell + view/toast state. Shows `<Auth>` until `user` is set.      |
 | `Auth`           | `POST /api/auth/signup` or `/login`; on success persists session.  |
-| `Sidebar`        | Nav + user + streak/upgrade UI (streak/upgrade are still static).  |
-| `Overview`       | `GET /api/user/progress` on mount → fills stats, skill bars, activity total. Recommendation banner + chart heights are still static. |
+| `Sidebar`        | Nav + user + streak/upgrade UI (includes Placement Test item).      |
+| `Overview`       | `GET /api/user/progress` + `GET /api/placement/latest` → fills stats, skill bars, and diagnostic level banner. |
+| `PlacementTest`  | `POST /api/placement/start`, `POST /api/placement/submit-answer`, `GET /api/placement/latest`. 4-phase adaptive test flow (Welcome, 3-2-1 Countdown, 30-Q adaptive test with confidence chips, Celebratory diagnostic results with clickable 15-topic Grammar Heatmap modal). |
 | `Writing`        | `POST /api/feedback/analyze-text` → maps `feedback.errors`/`alternatives` into the feedback panel. |
 | `FeedbackPanel`  | Pure presentational; renders `{ score, note, issues[], alternatives[] }`. |
 | `Grammar`        | `GET /api/drills/grammar` (load), `POST /api/feedback/grammar-drill` (check). Shows running `accuracy_this_pillar`. |
@@ -223,8 +232,7 @@ views via `useState`.
 
 **Dead code worth knowing about:** the `feedback` mock constant at the top of
 `src/main.jsx` (lines 12–23) is no longer referenced by any component — safe to
-delete. The `nav` array (lines 25–28) drives the sidebar. The `Play` icon is
-imported from `lucide-react` but never used.
+delete. The `nav` array drives the sidebar.
 
 ### 5.3 Styling
 
@@ -232,6 +240,8 @@ imported from `lucide-react` but never used.
   (`--ink`, `--violet`, `--green`, etc.), full app styling, two media queries
   (≤1000px tablet, ≤700px mobile).
 - `src/auth.css` — auth page/card styles plus `.exam-result` (IELTS score card).
+- `src/placement.css` — 4-phase placement test styles (welcome rules grid, countdown screen, 30-segment progress bar, category tags, confidence chips, celebratory reveal, CPV breakdown, interactive heatmap grid, and drilldown modal).
+- `src/insights.css` — learning profile insights.
 - Fonts: **DM Sans** (UI) + **Playfair Display** (headings) via Google Fonts `@import`.
 
 ---
@@ -252,6 +262,9 @@ GET  /health               health check (no auth)
 POST /api/auth/signup      create account
 POST /api/auth/login       log in
 GET  /api/auth/me          current user info
+POST /api/placement/start  initialize 30-Q adaptive placement session
+POST /api/placement/submit-answer submit answer + confidence rating, get next Q or final results
+GET  /api/placement/latest get user's latest placement test diagnostic report
 POST /api/feedback/analyze-text       writing feedback
 GET  /api/drills/grammar             random grammar drill
 POST /api/feedback/grammar-drill     check a drill answer
@@ -278,25 +291,29 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 
 ### 6.4 Services
 
+- **`placement.js`** — Adaptive testing and diagnostic assessment engine:
+  - **400-Question CPV Bank**: Loads from `backend/src/data/placement_questions.json` (134 Conversation `C`, 133 Passage `P`, 133 Vocabulary `V`).
+  - **Guaranteed 15-Topic Full Coverage**: The selection algorithm enforces that across the 30 questions, **every single one of the 15 grammar topics is tested exactly 2 times ($15 \times 2 = 30$)**, with no topic missed (0 Qs) or over-sampled.
+  - **Adaptive Difficulty Targeting**: Uses running `abilityScore` mapped to continuous target difficulty (`±0.10`).
+  - **Confidence-Weighted Scoring**: Evaluates answers with user confidence (*Certain*, *Fairly Sure*, *Not Sure*), shifting ability score from `-3` to `+3`.
+  - **Pacing Engine**: Real-time pace evaluation (`on_pace`, `slow`, `very_slow`) based on category time bands (C: 15-40s, V: 10-35s, P: 45-120s).
+  - **Diagnostic Report Generator**: Generates 15-topic grammar heatmap (with drilldown review of each answered question), CPV sub-scores, Champion vs Growth zones, CEFR level assignment (A1–C2), and custom course recommendations.
 - **`groq.js`** — lazy `Groq` client (throws 503 if no key). `jsonCompletion`
   uses `response_format: { type: 'json_object' }`, temp 0.2; JSON.parse failures
   become a friendly 502. Writing/vocab/exam results are cached in an in-memory
   `Map` (FIFO, 300 entries) keyed by `task|input`, so identical re-submissions
   skip the API. `checkVocabulary` runs on `GROQ_FAST_MODEL`; the rest use
-  `GROQ_MODEL`. Exports:
-  - `analyzeWriting(text, context)` → errors/suggestions/tone/alternatives/score_breakdown
-  - `checkVocabulary(word, sentence)` → correctness + sophistication 1–10
-  - `scoreEssay(text)` → four IELTS criteria + band estimate
-  - `conversationReply(scenario, history, message)` → bot reply + silent grammar notes
+  `GROQ_MODEL`.
 - **`supabase.js`** — `admin()` (service-role client), `publicAuth()` (anon client),
   `dbError(result)` (throws 502 on Supabase errors).
-- **`local.js`** — the local-mode store + 2 drills + 2 words (see §4).
+- **`local.js`** — in-memory store for local mode + placement attempts + user level updater.
 
 ### 6.5 Routes
 
 | File              | Endpoint(s)                                | Notes |
 |-------------------|--------------------------------------------|-------|
 | `auth.js`         | signup / login / me                        | signup validates level A1–C2, creates Supabase auth user + profile row, then signs in to return a JWT. Login returns profile from `users` table. |
+| `placement.js`    | `/start`, `/submit-answer`, `/latest`      | Starts session, delivers sanitized questions (no spoilers), evaluates confidence scoring, generates deep diagnostic report, updates user level. |
 | `writing.js`      | `POST /feedback/analyze-text`              | zod: 8–2000 chars. Score = avg of grammar/tone/vocabulary breakdown. Inserts `writing_submissions`. |
 | `grammar.js`      | `GET /drills/grammar`, `POST /feedback/grammar-drill` | Random drill (optional `?pillar=`); answer checked against `correct_answer`, attempt saved, per-pillar accuracy returned. |
 | `vocabulary.js`   | `GET /vocabulary/daily`, `POST /feedback/vocabulary-check` | Daily word chosen by day-index over all words. Sentence first pre-checked locally for the target word — if absent, returns "you haven't used the word" without calling Groq. Otherwise AI-checked; upserts `vocabulary_progress`; "mastered" after 3 correct uses. |
@@ -307,20 +324,7 @@ Parses env; exposes `config` (port, origins, keys, groq model), `requireConfig()
 ### 6.6 `audit_work/` — code audit builder
 
 Separate throwaway Node project (its own `package.json`, only dep is `exceljs`).
-Generates the 19-finding audit report from `CODE_AUDIT_REPORT.md`:
-
-- **`make_xlsx.mjs`** — the working generator. Writes
-  `outputs/20260812-linguafy-audit/linguafy-code-audit.xlsx` (5 sheets) +
-  `findings.json`. Run with `node make_xlsx.mjs` from anywhere — output dir is
-  resolved via `import.meta.url`, so it always lands under `audit_work/outputs/`.
-  **Gotcha:** every fill object must include `type: 'pattern'`; ExcelJS 4.4.0
-  silently drops fills without it, leaving dangling `fillId`s that make Excel
-  want to repair the file. Data validations must be added as a single
-  `dataValidations.add('E5:E23', …)` range, not per-cell (per-cell produces
-  overlapping ranges Excel also flags).
-- **`build_audit.mjs`** — an alternative generator that imports
-  `@oai/artifact-tool`, a package that does **not** exist on npm. It cannot
-  run; kept for reference only. Use `make_xlsx.mjs` instead.
+Generates the 19-finding audit report from `CODE_AUDIT_REPORT.md`.
 
 ---
 
@@ -333,46 +337,53 @@ editor). Every table references `users` back to `auth.users`.
 users
 ├── id (uuid, PK → auth.users)
 ├── email (unique), name
-├── language_level (A1–C2, default B2)
+├── language_level (A1–C2, calibrated via placement test)
+
+placement_questions          (400-question bank)
+├── id, external_id (unique), category (C, P, V)
+├── grammar_topic (15 topics), vocab_tier (tier1, tier2)
+├── estimated_difficulty (0.0-1.0), cefr_reference (A1-C2)
+├── question, passage, options (jsonb), explanation, expected_time_seconds
+
+placement_attempts
+├── id, user_id → users, started_at, completed_at
+├── ability_score, final_level (A1-C2), cpv_scores (jsonb)
+├── grammar_heatmap (jsonb), vocab_tier_reached, category_counts (jsonb), is_completed
+
+placement_responses
+├── id, attempt_id → placement_attempts, question_id → placement_questions
+├── user_answer, is_correct, confidence (certain, fairly_sure, not_sure)
+├── time_taken_seconds, pace_signal, score_movement (-3 to +3), ability_score_after
 
 writing_submissions
 ├── user_id → users
-├── text, context
-├── errors (jsonb), suggestions (jsonb)
-├── tone_assessment, vocabulary_alternatives (jsonb)
-├── score (0–100), score_breakdown (jsonb)
+├── text, context, errors (jsonb), suggestions (jsonb)
+├── tone_assessment, vocabulary_alternatives (jsonb), score (0–100), score_breakdown (jsonb)
 
 grammar_drills               (question bank, no user id)
-├── id (bigint identity), pillar, question_text
-├── options (jsonb), correct_answer, explanation, difficulty (1–5)
+├── id (bigint identity), pillar, question_text, options (jsonb)
+├── correct_answer, explanation, difficulty (1–5)
 
 grammar_attempts
 ├── user_id → users, drill_id → grammar_drills
-├── user_answer, correct
+├── user_answer, correct, confidence, awarded_points, time_spent_seconds
 
 vocabulary_words            (word bank, no user id)
-├── id, word (unique), definition, context_sentence
-├── context_examples (jsonb), difficulty (1–5), category
+├── id, word (unique), definition, context_sentence, context_examples (jsonb), difficulty (1–5), category
 
 vocabulary_progress
 ├── user_id, word_id (unique pair)
-├── user_sentence, correct, score (1–10)
-├── attempts, mastered, last_attempt, next_review
+├── user_sentence, correct, score (1–10), attempts, mastered, last_attempt, next_review
 
 exam_attempts
-├── user_id → users
-├── exam_type, task_type, essay_text, word_count
-├── task_achievement, coherence_cohesion, lexical_resource,
-│   grammatical_accuracy, band_estimate   (0–9 scale)
-├── feedback (jsonb)
+├── user_id → users, exam_type, task_type, essay_text, word_count
+├── task_achievement, coherence_cohesion, lexical_resource, grammatical_accuracy, band_estimate (0–9 scale), feedback (jsonb)
 
 conversation_sessions
 ├── user_id → users, scenario, created_at, ended_at
 
 conversation_turns
-├── session_id → conversation_sessions
-├── user_message, bot_response
-├── grammar_notes (jsonb), turn_number
+├── session_id → conversation_sessions, user_message, bot_response, grammar_notes (jsonb), turn_number
 ```
 
 - Seed data is in `supabase/seed.sql`: **3 grammar drills** (subject-verb
@@ -465,7 +476,7 @@ src/
 | Change DB schema / seed data          | `supabase/schema.sql`, `supabase/seed.sql` |
 | Understand product behavior           | `AboutProject.md` |
 | Understand the executed build plan    | `Linguafy_Development_Plan_V2.md` |
-| See known bugs / what to fix first    | `CODE_AUDIT_REPORT.md` + `audit_work/outputs/…/linguafy-code-audit.xlsx` (Fix Roadmap) |
+| Run placement test simulation         | `node scripts/test_placement.mjs` (verifies 30-Q adaptive run + 100% 15-topic coverage) |
 | Regenerate the audit XLSX             | `cd audit_work && node make_xlsx.mjs` |
 | Run the app locally                   | `backend: npm run dev` → :4000 · `frontend: npm run dev` → :5173 |
 | Deploy                                | `README.md` (Vercel; two projects — frontend + backend) |
