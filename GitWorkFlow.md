@@ -126,6 +126,86 @@ git push origin --delete feature/your-feature-name   # delete remote branch
 | Bring them back | `git stash pop` | "give me my hidden changes back" |
 | Last 10 commits | `git log --oneline -10` | "show 10 saves, one line each" |
 
+---
+
+## Troubleshooting: errors you'll hit, and what they mean
+
+### "error: failed to push some refs ... (fetch first)"
+GitHub already has commits you don't have on your machine yet. Git refuses to
+overwrite them.
+
+```bash
+git fetch origin                  # download info about new commits (changes no files)
+git pull --rebase origin main     # put the remote's commits under yours
+git push origin main              # try again
+```
+- `pull` = `fetch` (download) + `merge` (combine). The `--rebase` flag replays
+  your commits on top of the remote's instead of making a messy merge.
+- `git stash -u` hides all uncommitted changes so you can pull safely. Only
+  needed if you have unsaved work — if `git status` says "working tree clean",
+  skip it.
+
+### "pathspec 'feature/xyz' did not match any file(s)"
+The branch doesn't exist on *your* computer (maybe a friend pushed it to
+GitHub). Your git only knows about branches it has seen before.
+
+```bash
+git fetch origin
+git checkout feature/xyz
+```
+If that still fails: `git checkout -b feature/xyz origin/feature/xyz`.
+
+---
+
+## The Vercel rule — who can deploy (IMPORTANT)
+
+The live app auto-deploys on every push to `main`, but the build runs on the
+**repo owner's** Vercel account — not on anyone's laptop.
+
+Here's the catch we hit:
+- The repo is **private** and we're on Vercel's **free (Hobby) plan**.
+- On that plan, Vercel checks the *author of the commit* before deploying. If
+  the author isn't a member of the Vercel project, **the deployment is blocked
+  — even if the code is perfect.** This happened once: a friend pushed good
+  code and Vercel refused to build it.
+- No code change can fix this. Options: the owner does the merge (below),
+  upgrade Vercel to Pro, or make the repo public.
+
+**So the rule is simply:**
+
+| Who | Can push to | Can deploy |
+|---|---|---|
+| **Owner** | `main` and any branch | ✅ yes (commit is in your name) |
+| **Friend** | feature branches only | ❌ no — unless the owner does the merge |
+
+### Friend — how to hand code to the owner
+1. Work on a branch: `git checkout -b feature/my-thing`
+2. Commit + push that branch (never `main`).
+3. Open a Pull Request on GitHub (base = `main`, compare = your branch) so the
+   owner knows it's ready to review.
+
+### Owner — how to bring a friend's branch into `main` (deploy works)
+```bash
+git fetch origin
+git checkout feature/friend-branch     # first look at their work
+git log --oneline -5                   # see their commits
+git checkout main
+git pull --rebase origin main
+git merge --no-ff feature/friend-branch
+git push origin main
+```
+
+**The magic flag: `--no-ff`**
+A plain `git merge` can "fast-forward" — this keeps the friend as the commit
+author on `main`, and Vercel would **block the deploy again**. `--no-ff`
+forces a normal merge commit **authored by you**, so Vercel sees your name and
+deploys. Always use it when merging someone else's branch.
+
+After the push: watch vercel.com → project → **Deployments** until it turns
+green, then hard-refresh the site (`Ctrl + Shift + R`) to clear the old cache.
+
+---
+
 ## Golden rules
 1. Never push to `main` directly — always use a branch + PR.
 2. Pull before you start work (so you don't build on old files).
@@ -133,7 +213,8 @@ git push origin --delete feature/your-feature-name   # delete remote branch
 4. Test your own work before merging.
 5. Never commit secrets (`.env`, API keys).
 6. Delete branches after they're merged.
-7. Not sure? Ask. Worst case is you ask a question, not break the app.
+7. Owner merges with `--no-ff` (or a PR) so the deploy isn't blocked.
+8. Not sure? Ask. Worst case is you ask a question, not break the app.
 
 ---
 
